@@ -1,7 +1,8 @@
-// Image object. At least the syntax reminds me heavily of Nim.
-var img = document.createElement("img")
 // I'm recognizing already problems in that the image doesn't encode the
 // date/time into the image name.
-img.src = "http://gagarin.lpl.arizona.edu/allsky/AllSkyCurrentImage.JPG"
+var src = "http://gagarin.lpl.arizona.edu/allsky/AllSkyCurrentImage.JPG";
 
-document.body.appendChild(img) // Add to the DOM.
+var svg = d3.select("body").append("svg").attr("width", 1024).attr("height", 1024);
+
+// // Image object. At least the syntax reminds me heavily of Nim.
+var img = svg.append("svg:image").attr("xlink:href", src).attr("width", 1024).attr("height", 1024);
