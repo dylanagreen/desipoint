@@ -1,10 +1,14 @@
 const pos = [31.96164, -111.60022] // Lat and long of the spacewatch cam
 
+// const scale = 800 // A scaling factor so we don't use the entire 1024x1024 image for now
+
 // I'm recognizing already problems in that the image doesn't encode the
 // date/time into the image name.
 var src = "http://gagarin.lpl.arizona.edu/allsky/AllSkyCurrentImage.JPG";
 
-var svg = d3.select("body").append("svg").attr("width", 2048).attr("height", 1024);
+var svg = d3.select("body").append("div").classed("svg-container", true).append("svg")
+          .attr("preserveAspectRatio", "xMinYMin meet").attr("viewBox", "0 0 2048 1024")
+          .classed("svg-content-responsive", true);//.attr("width", scale * 2).attr("height", scale);
 
 // // Image object. At least the syntax reminds me heavily of Nim.
 var img = svg.append("svg:image").attr("xlink:href", src).attr("width", 1024).attr("height", 1024);
@@ -109,7 +113,8 @@ let y = 512 - r * Math.cos(az * Math.PI / 180);
 svg.append("circle").attr("r", 3.5).attr("cx", x).attr("cy", y).style("fill", "chartreuse");
 
 // Handles the universal time clock on the right side.
-var text = svg.append("text").attr("x", 1030).attr("y", 150).attr("font-size", "200px")
+var t_size = 200
+var text = svg.append("text").attr("x", 1029).attr("y", t_size).attr("font-size", t_size + "px")
 
 function update_clock() {
   today = new Date();
@@ -129,4 +134,4 @@ var timer = d3.timer(update_clock);
 let ra_rounded = Math.round(ra * 1000 * 180 / Math.PI) / 1000
 let dec_rounded = Math.round(dec * 1000 * 180 / Math.PI) / 1000
 let coord_text = "RA:" + ra_rounded + "\tDEC:" + dec_rounded
-var coords = svg.append("text").attr("x", 1030).attr("y", 150 + 85).attr("font-size", "95px").text(coord_text)
+var coords = svg.append("text").attr("x", 1029).attr("y", t_size + 85).attr("font-size", t_size / 2 + "px").text(coord_text)
