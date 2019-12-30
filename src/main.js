@@ -124,3 +124,9 @@ function update_clock() {
 }
 // Timer that updates every second I believe.
 var timer = d3.timer(update_clock);
+
+// Converts to degrees and rounds to the nearest 1000th in one step.
+let ra_rounded = Math.round(ra * 1000 * 180 / Math.PI) / 1000
+let dec_rounded = Math.round(dec * 1000 * 180 / Math.PI) / 1000
+let coord_text = "RA:" + ra_rounded + "\tDEC:" + dec_rounded
+var coords = svg.append("text").attr("x", 1030).attr("y", 150 + 85).attr("font-size", "95px").text(coord_text)
