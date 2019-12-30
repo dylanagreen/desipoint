@@ -28,9 +28,7 @@ let days = seconds / 3600 / 24; // 3600 seconds in an hour 24 hours per day
 
 // Finds the number of hours into the universal time day we are
 let today = new Date();
-// + 8 is due to Irvine
-// TODO: Change to + 7 when deployed in Arizona
-var ut = today.getHours() + 8 + today.getMinutes() / 60; // + 8 to get from local to UT
+var ut = today.getUTCHours() +  today.getUTCMinutes() / 60;
 
 // Makes sure universal time is on 24 hour time and not 48.
 ut = (ut < 24) ? ut : ut - 24;
@@ -55,7 +53,9 @@ ra = ra * Math.PI / 180;
 hour = hour * Math.PI / 180;
 var lat = pos[0] * Math.PI / 180;
 
-// Sine of altitude hence taking asin after.
+// Finds sine of altitude hence taking asin after.
+// Cunning algorithm I found. Allegedly by Peter Duffet-Smith in
+// Practical Astornomy with your Calculator
 var alt = Math.sin(dec) * Math.sin(lat) + Math.cos(dec) * Math.cos(lat) * Math.cos(hour);
 alt = Math.asin(alt)
 
