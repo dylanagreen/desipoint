@@ -4,7 +4,7 @@ const pos = [31.96164, -111.60022] // Lat and long of the spacewatch cam
 // date/time into the image name.
 var src = "http://gagarin.lpl.arizona.edu/allsky/AllSkyCurrentImage.JPG";
 
-var svg = d3.select("body").append("svg").attr("width", 1024).attr("height", 1024);
+var svg = d3.select("body").append("svg").attr("width", 2048).attr("height", 1024);
 
 // // Image object. At least the syntax reminds me heavily of Nim.
 var img = svg.append("svg:image").attr("xlink:href", src).attr("width", 1024).attr("height", 1024);
@@ -27,7 +27,7 @@ let seconds = (Date.now() - epoch_start) / 1000; // Number of seconds elapsed si
 let days = seconds / 3600 / 24; // 3600 seconds in an hour 24 hours per day
 
 // Finds the number of hours into the universal time day we are
-let today = new Date();
+var today = new Date();
 var ut = today.getUTCHours() +  today.getUTCMinutes() / 60;
 
 // Makes sure universal time is on 24 hour time and not 48.
@@ -106,4 +106,21 @@ let y = 512 - r * Math.cos(az * Math.PI / 180);
 
 // Circle at the given position.
 // I didn't know that chartreuse was a green color.
-svg.append("circle").attr("r", 3.5).attr("cx", x).attr("cy", y).attr("style", "fill: chartreuse");
+svg.append("circle").attr("r", 3.5).attr("cx", x).attr("cy", y).style("fill", "chartreuse");
+
+// Handles the universal time clock on the right side.
+var text = svg.append("text").attr("x", 1030).attr("y", 150).attr("font-size", "200px")
+
+function update_clock() {
+  today = new Date();
+  // Kind of ridiculous that this is the only way to get leading 0s on the
+  // values if the're less than ten.
+  let hour = (today.getUTCHours() < 10 ? "0" : "") + today.getUTCHours();
+  let minute = (today.getUTCMinutes() < 10 ? "0" : "") + today.getUTCMinutes();
+  let second = (today.getUTCSeconds() < 10 ? "0" : "") + today.getUTCSeconds();
+  let t = hour + ":" + minute + ":" + second + "ut";
+
+  text.text(t);
+}
+// Timer that updates every second I believe.
+var timer = d3.timer(update_clock);
