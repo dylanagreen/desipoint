@@ -1,15 +1,12 @@
 const pos = [31.96164, -111.60022] // Lat and long of the spacewatch cam
 
-// I'm recognizing already problems in that the image doesn't encode the
-// date/time into the image name.
-var src = "http://gagarin.lpl.arizona.edu/allsky/AllSkyCurrentImage.JPG";
-
 //viewBox is the size of the coordinate system so to speak, so the old 2048x1024
 var svg = d3.select("body").append("div").classed("svg-container", true).append("svg")
           .attr("preserveAspectRatio", "xMinYMin meet").attr("viewBox", "0 0 2048 1024")
           .classed("svg-content-responsive", true);
 
-// // Image object. At least the syntax reminds me heavily of Nim.
+// Setup for the image.
+var src = "http://gagarin.lpl.arizona.edu/allsky/AllSkyCurrentImage.JPG";
 var img = svg.append("svg:image").attr("xlink:href", src).attr("width", 1024).attr("height", 1024);
 
 // Roughly but not exactly the RA/Dec of Polaris.
@@ -117,7 +114,8 @@ let y = new_coords[1]
 
 // Circle at the given position.
 // I didn't know that chartreuse was a green color.
-svg.append("circle").attr("r", 3.5).attr("cx", x).attr("cy", y).style("fill", "chartreuse");
+var circ = svg.append("circle").attr("r", 3.5).attr("cx", x).attr("cy", y).style("fill", "chartreuse").style("opacity", 1);
+circ.opacity = 1 // Variable to easily access whether the circle is on or not.
 
 // Handles the universal time clock on the right side.
 var t_size = 200
@@ -134,8 +132,9 @@ function update_clock() {
 
   text.text(t);
 }
-// Timer that updates every second I believe.
-var timer = d3.timer(update_clock);
+
+// Timer that updates every 10ms. Less memory usage than 0ms lol.
+var timer = d3.timer(update_clock, 10);
 
 // Rounds to the nearest 1000th in one step.
 let ra_rounded = Math.round(ra * 1000) / 1000;
@@ -146,6 +145,7 @@ var coords = svg.append("text").attr("x", 1029).attr("y", t_size + 85).attr("fon
 // Plotting the survey area in red.
 const left_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/master/src/survey_left.json"
 const right_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/master/src/survey_right.json"
+const mw_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/master/src/mw.json"
 
 d3.json(left_data).then(function(d) {
   var xy = d.map(function(d) {
@@ -163,11 +163,29 @@ d3.json(right_data).then(function(d) {
   svg.append("polygon").attr("points", xy).attr("stroke", "red").attr("stroke-width", 2).attr("fill", "none");
 });
 
-const mw_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/master/src/mw.json"
-d3.json(mw_data).then(function(d) {
-  var xy = d.map(function(d) {
-    return radec_to_xy(d[0], d[1]).join(",")
-  }).join(" ");
+var survey_opacity = 1
 
-  svg.append("polyline").attr("points", xy).attr("stroke", "magenta").attr("stroke-width", 2).attr("fill", "none");
-});
+// Line indicating the plane of the milky way
+// d3.json(mw_data).then(function(d) {
+//   var xy = d.map(function(d) {
+//     return radec_to_xy(d[0], d[1]).join(",")
+//   }).join(" ");
+
+//   svg.append("polyline").attr("points", xy).attr("stroke", "magenta").attr("stroke-width", 2).attr("fill", "none");
+// });
+
+// Function for toggling the telescope pointing on and off.
+function toggle_telescope() {
+  circ.opacity = circ.opacity == 1 ? 0: 1
+  circ.style("opacity", circ.opacity)
+}
+
+d3.select("#A").on("change", toggle_telescope)
+
+// Function for toggling the survey area on and off.
+function toggle_survey() {
+  survey_opacity = survey_opacity == 1 ? 0 : 1
+  svg.selectAll("polygon").style("opacity", survey_opacity)
+}
+
+d3.select("#B").on("change", toggle_survey)
