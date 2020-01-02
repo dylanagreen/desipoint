@@ -148,13 +148,26 @@ const left_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/maste
 const right_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/master/src/survey_right.json"
 
 d3.json(left_data).then(function(d) {
-  var xy = d.map(function(d){
-    return radec_to_xy(d[0], d[1]).join(",")}).join(" ");
-  svg.append("polygon").attr("points", xy).attr("stroke","red").attr("stroke-width",2).attr("fill", "none");
-  });
+  var xy = d.map(function(d) {
+    return radec_to_xy(d[0], d[1]).join(",")
+  }).join(" ");
+
+  svg.append("polygon").attr("points", xy).attr("stroke", "red").attr("stroke-width", 2).attr("fill", "none");
+});
 
 d3.json(right_data).then(function(d) {
-  var xy = d.map(function(d){
-    return radec_to_xy(d[0], d[1]).join(",")}).join(" ");
-  svg.append("polygon").attr("points", xy).attr("stroke","red").attr("stroke-width",2).attr("fill", "none");
-  });
+  var xy = d.map(function(d) {
+    return radec_to_xy(d[0], d[1]).join(",")
+  }).join(" ");
+
+  svg.append("polygon").attr("points", xy).attr("stroke", "red").attr("stroke-width", 2).attr("fill", "none");
+});
+
+const mw_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/master/src/mw.json"
+d3.json(mw_data).then(function(d) {
+  var xy = d.map(function(d) {
+    return radec_to_xy(d[0], d[1]).join(",")
+  }).join(" ");
+
+  svg.append("polyline").attr("points", xy).attr("stroke", "magenta").attr("stroke-width", 2).attr("fill", "none");
+});
