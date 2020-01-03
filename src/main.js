@@ -172,13 +172,23 @@ d3.json(right_data).then(function(d) {
 var survey_opacity = 1
 
 // Line indicating the plane of the milky way
-// d3.json(mw_data).then(function(d) {
-//   var xy = d.map(function(d) {
-//     return radec_to_xy(d[0], d[1]).join(",")
-//   }).join(" ");
+d3.json(mw_data).then(function(d) {
+  var xy = d.map(function(d) {
+    var point = radec_to_xy(d[0], d[1])
+    let r = (512- point[0]) * (512 - point[0]) + (512 - point[1]) * (512 - point[1])
+    if(r < 509 * 509){
+      console.log("asdf")
+      return point.join(",")
+    }
+    else {
+      return ""
+    }
+  }).join(" ");
 
-//   svg.append("polyline").attr("points", xy).attr("stroke", "magenta").attr("stroke-width", 2).attr("fill", "none");
-// });
+  svg.append("polyline").attr("points", xy).attr("stroke", "magenta").attr("stroke-width", 2).attr("fill", "none");
+});
+
+var mw_opacity = 1
 
 // Function for toggling the telescope pointing on and off.
 function toggle_telescope() {
@@ -195,3 +205,11 @@ function toggle_survey() {
 }
 
 d3.select("#B").on("change", toggle_survey)
+
+// Function for toggling the survey area on and off.
+function toggle_mw() {
+  mw_opacity = mw_opacity == 1 ? 0 : 1
+  svg.selectAll("polyline").style("opacity", mw_opacity)
+}
+
+d3.select("#C").on("change", toggle_mw)
