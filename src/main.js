@@ -120,15 +120,21 @@ circ.opacity = 1 // Variable to easily access whether the circle is on or not.
 // Handles the universal time clock on the right side.
 var t_size = 200
 var text = svg.append("text").attr("x", 1029).attr("y", t_size).attr("font-size", t_size + "px")
+var ut_text = svg.append("text").attr("x", 1029).attr("y", 1.5 * t_size).attr("font-size", t_size / 2 + "px")
 
 function update_clock() {
   today = new Date();
   // Kind of ridiculous that this is the only way to get leading 0s on the
   // values if the're less than ten.
-  let hour = (today.getUTCHours() < 10 ? "0" : "") + today.getUTCHours();
-  let minute = (today.getUTCMinutes() < 10 ? "0" : "") + today.getUTCMinutes();
-  let second = (today.getUTCSeconds() < 10 ? "0" : "") + today.getUTCSeconds();
-  let t = hour + ":" + minute + ":" + second + "ut";
+  var hour = (today.getUTCHours() < 10 ? "0" : "") + today.getUTCHours();
+  var minute = (today.getUTCMinutes() < 10 ? "0" : "") + today.getUTCMinutes();
+  var second = (today.getUTCSeconds() < 10 ? "0" : "") + today.getUTCSeconds();
+  var t = hour + ":" + minute + ":" + second + "ut";
+
+  ut_text.text(t);
+
+  hour = (today.getHours() < 10 ? "0" : "") + today.getHours();
+  t = hour + ":" + minute + ":" + second;
 
   text.text(t);
 }
@@ -140,7 +146,7 @@ var timer = d3.timer(update_clock, 10);
 let ra_rounded = Math.round(ra * 1000) / 1000;
 let dec_rounded = Math.round(dec * 1000) / 1000;
 let coord_text = "RA:" + ra_rounded + "\tDEC:" + dec_rounded;
-var coords = svg.append("text").attr("x", 1029).attr("y", t_size + 85).attr("font-size", t_size / 2 + "px").text(coord_text);
+var coords = svg.append("text").attr("x", 1029).attr("y", 1.5 * t_size + 85).attr("font-size", t_size / 2 + "px").text(coord_text);
 
 // Plotting the survey area in red.
 const left_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/master/src/survey_left.json"
