@@ -152,13 +152,15 @@ var coords = svg.append("text").attr("x", 1029).attr("y", 1.5 * t_size + 85).att
 const left_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/master/src/survey_left.json"
 const right_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/master/src/survey_right.json"
 const mw_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/master/src/mw.json"
+const ecliptic_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/master/src/ecliptic.json"
 
 d3.json(left_data).then(function(d) {
   var xy = d.map(function(d) {
     return radec_to_xy(d[0], d[1]).join(",")
   }).join(" ");
 
-  svg.append("polygon").attr("points", xy).attr("stroke", "red").attr("stroke-width", 2).attr("fill", "none");
+  svg.append("polygon").attr("points", xy).attr("stroke", "red")
+     .attr("stroke-width", 2).attr("fill", "red").attr("fill-opacity", 0.4);
 });
 
 d3.json(right_data).then(function(d) {
@@ -166,7 +168,8 @@ d3.json(right_data).then(function(d) {
     return radec_to_xy(d[0], d[1]).join(",")
   }).join(" ");
 
-  svg.append("polygon").attr("points", xy).attr("stroke", "red").attr("stroke-width", 2).attr("fill", "none");
+  svg.append("polygon").attr("points", xy).attr("stroke", "red")
+     .attr("stroke-width", 2).attr("fill", "red").attr("fill-opacity", 0.4);
 });
 
 var survey_opacity = 1
@@ -175,7 +178,7 @@ var survey_opacity = 1
 d3.json(mw_data).then(function(d) {
   var xy = d.map(function(d) {
     var point = radec_to_xy(d[0], d[1])
-    let r = (512- point[0]) * (512 - point[0]) + (512 - point[1]) * (512 - point[1])
+    let r = (512 - point[0]) * (512 - point[0]) + (512 - point[1]) * (512 - point[1])
     if(r < 509 * 509){
       console.log("asdf")
       return point.join(",")
@@ -185,10 +188,28 @@ d3.json(mw_data).then(function(d) {
     }
   }).join(" ");
 
-  svg.append("polyline").attr("points", xy).attr("stroke", "magenta").attr("stroke-width", 2).attr("fill", "none");
+  svg.append("polyline").attr("points", xy).attr("stroke", "magenta").attr("stroke-width", 2).attr("fill", "none").attr("id", "mw");
 });
 
-var mw_opacity = 1
+// // Line indicating the barycentric mean ecliptic
+// d3.json(ecliptic_data).then(function(d) {
+//   var xy = d.map(function(d) {
+//     var point = radec_to_xy(d[0], d[1])
+//     let r = (512 - point[0]) * (512 - point[0]) + (512 - point[1]) * (512 - point[1])
+//     if(r < 509 * 509){
+//       console.log("asdf")
+//       return point.join(",")
+//     }
+//     else {
+//       return ""
+//     }
+//   }).join(" ");
+
+//   svg.append("polyline").attr("points", xy).attr("stroke", "cyan").attr("stroke-width", 2).attr("fill", "none").attr("id", "ecliptic");
+// });
+
+var mw_opacity = 1;
+var ecliptic_opacity = 1;
 
 // Function for toggling the telescope pointing on and off.
 function toggle_telescope() {
@@ -196,7 +217,7 @@ function toggle_telescope() {
   circ.style("opacity", circ.opacity)
 }
 
-d3.select("#A").on("change", toggle_telescope)
+d3.select("#A").on("change", toggle_telescope);
 
 // Function for toggling the survey area on and off.
 function toggle_survey() {
@@ -206,10 +227,18 @@ function toggle_survey() {
 
 d3.select("#B").on("change", toggle_survey)
 
-// Function for toggling the survey area on and off.
+// Function for toggling the galactic plane on and off.
 function toggle_mw() {
   mw_opacity = mw_opacity == 1 ? 0 : 1
-  svg.selectAll("polyline").style("opacity", mw_opacity)
+  svg.select("polyline#mw").style("opacity", mw_opacity)
 }
 
 d3.select("#C").on("change", toggle_mw)
+
+// // Function for toggling the galactic plane on and off.
+// function toggle_ecliptic() {
+//   ecliptic_opacity = ecliptic_opacity == 1 ? 0 : 1
+//   svg.select("polyline#ecliptic").style("opacity", ecliptic_opacity)
+// }
+
+// d3.select("#D").on("change", toggle_ecliptic)
