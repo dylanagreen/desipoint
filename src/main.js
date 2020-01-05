@@ -279,7 +279,7 @@ function draw_canvas() {
   let new_coords = radec_to_xy(ra, dec)
   circ.attr("cx", new_coords[0]).attr("cy", new_coords[1])
 }
-draw_cavas() // Call the draw function first to draw everything.
+draw_canvas() // Call the draw function first to draw everything.
 // Exectutes the update function every 120 seconds
 d3.interval(draw_canvas, 120 * 1000)
 
