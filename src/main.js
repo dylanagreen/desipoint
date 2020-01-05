@@ -191,22 +191,22 @@ d3.json(mw_data).then(function(d) {
   svg.append("polyline").attr("points", xy).attr("stroke", "magenta").attr("stroke-width", 2).attr("fill", "none").attr("id", "mw");
 });
 
-// // Line indicating the barycentric mean ecliptic
-// d3.json(ecliptic_data).then(function(d) {
-//   var xy = d.map(function(d) {
-//     var point = radec_to_xy(d[0], d[1])
-//     let r = (512 - point[0]) * (512 - point[0]) + (512 - point[1]) * (512 - point[1])
-//     if(r < 509 * 509){
-//       console.log("asdf")
-//       return point.join(",")
-//     }
-//     else {
-//       return ""
-//     }
-//   }).join(" ");
+// Line indicating the barycentric mean ecliptic
+d3.json(ecliptic_data).then(function(d) {
+  var xy = d.map(function(d) {
+    var point = radec_to_xy(d[0], d[1])
+    let r = (512 - point[0]) * (512 - point[0]) + (512 - point[1]) * (512 - point[1])
+    if(r < 509 * 509){
+      console.log("asdf")
+      return point.join(",")
+    }
+    else {
+      return ""
+    }
+  }).join(" ");
 
-//   svg.append("polyline").attr("points", xy).attr("stroke", "cyan").attr("stroke-width", 2).attr("fill", "none").attr("id", "ecliptic");
-// });
+  svg.append("polyline").attr("points", xy).attr("stroke", "cyan").attr("stroke-width", 2).attr("fill", "none").attr("id", "ecliptic");
+});
 
 var mw_opacity = 1;
 var ecliptic_opacity = 1;
@@ -235,10 +235,10 @@ function toggle_mw() {
 
 d3.select("#C").on("change", toggle_mw)
 
-// // Function for toggling the galactic plane on and off.
-// function toggle_ecliptic() {
-//   ecliptic_opacity = ecliptic_opacity == 1 ? 0 : 1
-//   svg.select("polyline#ecliptic").style("opacity", ecliptic_opacity)
-// }
+// Function for toggling the galactic plane on and off.
+function toggle_ecliptic() {
+  ecliptic_opacity = ecliptic_opacity == 1 ? 0 : 1
+  svg.select("polyline#ecliptic").style("opacity", ecliptic_opacity)
+}
 
-// d3.select("#D").on("change", toggle_ecliptic)
+d3.select("#D").on("change", toggle_ecliptic)
