@@ -1,13 +1,47 @@
 const pos = [31.96164, -111.60022] // Lat and long of the spacewatch cam
 
+// Data for the survey area, galactic plane, and ecliptic.
+const left_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/master/src/survey_left.json"
+const right_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/master/src/survey_right.json"
+const mw_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/master/src/mw.json"
+const ecliptic_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/master/src/ecliptic.json"
+
+// Image location
+var src = "http://gagarin.lpl.arizona.edu/allsky/AllSkyCurrentImage.JPG";
+
+// Variables to hold the opacity of each element.
+var survey_opacity = 1;
+var mw_opacity = 1;
+var ecliptic_opacity = 1;
+var circ_opacity = 1
+
 //viewBox is the size of the coordinate system so to speak, so the old 2048x1024
 var svg = d3.select("body").append("div").classed("svg-container", true).append("svg")
           .attr("preserveAspectRatio", "xMinYMin meet").attr("viewBox", "0 0 2048 1024")
           .classed("svg-content-responsive", true);
 
-// Setup for the image.
-var src = "http://gagarin.lpl.arizona.edu/allsky/AllSkyCurrentImage.JPG";
-var img = svg.append("svg:image").attr("xlink:href", src).attr("width", 1024).attr("height", 1024);
+var im_layer = svg.append("g")
+var overlay = svg.append("g")
+
+// Base objects for the overlay. These are first so tha the telescope pointing
+// circle is the highest object in z-order.
+
+// Ecliptic base
+overlay.append("polyline").attr("stroke", "cyan").attr("stroke-width", 2)
+       .attr("fill", "none").attr("id", "ecliptic");
+
+// Galactic plane base
+overlay.append("polyline").attr("stroke", "magenta").attr("stroke-width", 2)
+       .attr("fill", "none").attr("id", "mw")
+
+// Survey Bases
+overlay.append("polygon").attr("stroke", "red").attr("stroke-width", 2)
+       .attr("fill", "red").attr("fill-opacity", 0.4).attr("id", "survey_left");
+
+overlay.append("polygon").attr("stroke", "red").attr("stroke-width", 2)
+       .attr("fill", "red").attr("fill-opacity", 0.4).attr("id", "survey_right");
+
+
 
 // Roughly but not exactly the RA/Dec of Polaris.
 var ra = 2.5 * 15;
@@ -114,8 +148,8 @@ let y = new_coords[1]
 
 // Circle at the given position.
 // I didn't know that chartreuse was a green color.
-var circ = svg.append("circle").attr("r", 3.5).attr("cx", x).attr("cy", y).style("fill", "chartreuse").style("opacity", 1);
-circ.opacity = 1 // Variable to easily access whether the circle is on or not.
+var circ = overlay.append("circle").attr("r", 3.5).attr("cx", x).attr("cy", y)
+              .style("fill", "chartreuse").style("opacity", 1);
 
 // Handles the universal time clock on the right side.
 var t_size = 200
@@ -139,8 +173,8 @@ function update_clock() {
   text.text(t);
 }
 
-// Timer that updates every 10ms. Less memory usage than 0ms lol.
-var timer = d3.timer(update_clock, 10);
+// Timer that updates clock every 100ms. Less memory usage than 0ms lol.
+var timer = d3.interval(update_clock, 100);
 
 // Rounds to the nearest 1000th in one step.
 let ra_rounded = Math.round(ra * 1000) / 1000;
@@ -148,30 +182,25 @@ let dec_rounded = Math.round(dec * 1000) / 1000;
 let coord_text = "RA:" + ra_rounded + "\tDEC:" + dec_rounded;
 var coords = svg.append("text").attr("x", 1029).attr("y", 1.5 * t_size + 85).attr("font-size", t_size / 2 + "px").text(coord_text);
 
-// Plotting the survey area in red.
-const left_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/master/src/survey_left.json"
-const right_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/master/src/survey_right.json"
-const mw_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/master/src/mw.json"
-const ecliptic_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/master/src/ecliptic.json"
+function update_survey() {
+  // Plotting the survey area in red.
+  d3.json(left_data).then(function(d) {
+    var xy = d.map(function(d) {
+      return radec_to_xy(d[0], d[1]).join(",")
+    }).join(" ");
 
-d3.json(left_data).then(function(d) {
-  var xy = d.map(function(d) {
-    return radec_to_xy(d[0], d[1]).join(",")
-  }).join(" ");
+    overlay.select("polygon#survey_left").attr("points", xy);
+      // Above line nsures the opacity remains the same between redraws
+  });
 
-  svg.append("polygon").attr("points", xy).attr("stroke", "red")
-     .attr("stroke-width", 2).attr("fill", "red").attr("fill-opacity", 0.4);
-});
+  d3.json(right_data).then(function(d) {
+    var xy = d.map(function(d) {
+      return radec_to_xy(d[0], d[1]).join(",")
+    }).join(" ");
 
-d3.json(right_data).then(function(d) {
-  var xy = d.map(function(d) {
-    return radec_to_xy(d[0], d[1]).join(",")
-  }).join(" ");
-
-  svg.append("polygon").attr("points", xy).attr("stroke", "red")
-     .attr("stroke-width", 2).attr("fill", "red").attr("fill-opacity", 0.4);
-});
-var survey_opacity = 1
+    overlay.select("polygon#survey_right").attr("points", xy);
+  });
+}
 
 function shift_and_join(xy) {
   // Only the x values of the array to find the min.
@@ -191,51 +220,75 @@ function shift_and_join(xy) {
   return joined.join(" ");
 }
 
-// Line indicating the plane of the milky way
-d3.json(mw_data).then(function(d) {
-  var xy = d.map(function(d) {
-    var point = radec_to_xy(d[0], d[1])
-    let r = (512 - point[0]) * (512 - point[0]) + (512 - point[1]) * (512 - point[1])
-    if(r < 509 * 509){
-      return point
-    }
-    else {
-      return null
-    }
-  }).filter(function(d) {
-    return d != null;
-  }); // Strip out the nulll elements
+function update_galactic_plane() {
+  // Line indicating the plane of the milky way
+  d3.json(mw_data).then(function(d) {
+    var xy = d.map(function(d) {
+      var point = radec_to_xy(d[0], d[1])
+      let r = (512 - point[0]) * (512 - point[0]) + (512 - point[1]) * (512 - point[1])
+      if(r < 509 * 509){
+        return point
+      }
+      else {
+        return null
+      }
+    }).filter(function(d) {
+      return d != null;
+    }); // Strip out the nulll elements
 
-  let points = shift_and_join(xy);
-  svg.append("polyline").attr("points", points).attr("stroke", "magenta").attr("stroke-width", 2).attr("fill", "none").attr("id", "mw");
-});
+    let points = shift_and_join(xy);
+    overlay.select("polyline#mw").attr("points", points);
+  });
+}
 
-// Line indicating the barycentric mean ecliptic
-d3.json(ecliptic_data).then(function(d) {
-  var xy = d.map(function(d) {
-    var point = radec_to_xy(d[0], d[1])
-    let r = (512 - point[0]) * (512 - point[0]) + (512 - point[1]) * (512 - point[1])
-    if(r < 509 * 509){
-      return point
-    }
-    else {
-      return null
-    }
-  }).filter(function(d) {
-    return d != null;
-  }); // Strip out the nulll elements
+function update_ecliptic() {
+  // Line indicating the barycentric mean ecliptic
+  d3.json(ecliptic_data).then(function(d) {
+    var xy = d.map(function(d) {
+      var point = radec_to_xy(d[0], d[1])
+      let r = (512 - point[0]) * (512 - point[0]) + (512 - point[1]) * (512 - point[1])
+      if(r < 509 * 509){
+        return point
+      }
+      else {
+        return null
+      }
+    }).filter(function(d) {
+      return d != null;
+    }); // Strip out the nulll elements
 
-  let points = shift_and_join(xy);
-  svg.append("polyline").attr("points", xy).attr("stroke", "cyan").attr("stroke-width", 2).attr("fill", "none").attr("id", "ecliptic");
-});
+    let points = shift_and_join(xy);
+    overlay.select("polyline#ecliptic").attr("points", xy);
+  });
+}
 
-var mw_opacity = 1;
-var ecliptic_opacity = 1;
+var counter = 0
+// Catchall function for drawing the image with everything on top of it.
+function draw_canvas() {
+  im_layer.select("image").remove(); // Remove the old image to plot a new one.
+
+  // The new fetched image.
+  im_layer.append("svg:image").attr("width", 1024).attr("height", 1024)
+      .attr("xlink:href", src).attr("id", "image").attr("class", "NO-CACHE");
+
+  update_ecliptic()
+  update_galactic_plane()
+  update_survey()
+
+  // Updates the circle's coordinates
+  let new_coords = radec_to_xy(ra, dec)
+  circ.attr("cx", new_coords[0]).attr("cy", new_coords[1])
+}
+draw_cavas() // Call the draw function first to draw everything.
+// Exectutes the update function every 120 seconds
+d3.interval(draw_canvas, 120 * 1000)
+
+// BUTTONS BELOW THIS POINT
 
 // Function for toggling the telescope pointing on and off.
 function toggle_telescope() {
-  circ.opacity = circ.opacity == 1 ? 0: 1
-  circ.style("opacity", circ.opacity)
+  circ_opacity = circ_opacity == 1 ? 0: 1
+  circ.style("opacity", circ_opacity)
 }
 
 d3.select("#A").on("change", toggle_telescope);
