@@ -171,8 +171,25 @@ d3.json(right_data).then(function(d) {
   svg.append("polygon").attr("points", xy).attr("stroke", "red")
      .attr("stroke-width", 2).attr("fill", "red").attr("fill-opacity", 0.4);
 });
-
 var survey_opacity = 1
+
+function shift_and_join(xy) {
+  // Only the x values of the array to find the min.
+  var xonly = xy.map(function(d) {
+    return d[0];
+  });
+
+  // This loops esentially shifts the array so that the minimum x is first.
+  for(i = 0; i <= xonly.indexOf(Math.min(...xonly)); i++) {
+    xy.push(xy.shift());
+  };
+
+  // Join the points into a continuous string
+  let joined = xy.map(function(d) {
+    return d.join(",")
+  });
+  return joined.join(" ");
+}
 
 // Line indicating the plane of the milky way
 d3.json(mw_data).then(function(d) {
@@ -180,15 +197,17 @@ d3.json(mw_data).then(function(d) {
     var point = radec_to_xy(d[0], d[1])
     let r = (512 - point[0]) * (512 - point[0]) + (512 - point[1]) * (512 - point[1])
     if(r < 509 * 509){
-      console.log("asdf")
-      return point.join(",")
+      return point
     }
     else {
-      return ""
+      return null
     }
-  }).join(" ");
+  }).filter(function(d) {
+    return d != null;
+  }); // Strip out the nulll elements
 
-  svg.append("polyline").attr("points", xy).attr("stroke", "magenta").attr("stroke-width", 2).attr("fill", "none").attr("id", "mw");
+  let points = shift_and_join(xy);
+  svg.append("polyline").attr("points", points).attr("stroke", "magenta").attr("stroke-width", 2).attr("fill", "none").attr("id", "mw");
 });
 
 // Line indicating the barycentric mean ecliptic
@@ -197,14 +216,16 @@ d3.json(ecliptic_data).then(function(d) {
     var point = radec_to_xy(d[0], d[1])
     let r = (512 - point[0]) * (512 - point[0]) + (512 - point[1]) * (512 - point[1])
     if(r < 509 * 509){
-      console.log("asdf")
-      return point.join(",")
+      return point
     }
     else {
-      return ""
+      return null
     }
-  }).join(" ");
+  }).filter(function(d) {
+    return d != null;
+  }); // Strip out the nulll elements
 
+  let points = shift_and_join(xy);
   svg.append("polyline").attr("points", xy).attr("stroke", "cyan").attr("stroke-width", 2).attr("fill", "none").attr("id", "ecliptic");
 });
 
