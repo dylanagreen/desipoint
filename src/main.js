@@ -36,10 +36,10 @@ overlay.append("polyline").attr("stroke", "magenta").attr("stroke-width", 2)
 
 // Survey Bases
 overlay.append("polygon").attr("stroke", "red").attr("stroke-width", 2)
-       .attr("fill", "red").attr("fill-opacity", 0.4).attr("id", "survey_left");
+       .attr("fill", "red").attr("fill-opacity", 0.2).attr("id", "survey_left");
 
 overlay.append("polygon").attr("stroke", "red").attr("stroke-width", 2)
-       .attr("fill", "red").attr("fill-opacity", 0.4).attr("id", "survey_right");
+       .attr("fill", "red").attr("fill-opacity", 0.2).attr("id", "survey_right");
 
 
 
@@ -208,8 +208,19 @@ function shift_and_join(xy) {
     return d[0];
   });
 
+  var yonly = xy.map(function(d) {
+    return d[1];
+  });
+
+  // Fund the difference between the x and y coordinates of the endpoints.
+  let xdiff = Math.max(...xonly) - Math.min(...xonly)
+  let ydiff = Math.max(...yonly) - Math.min(...yonly)
+
+  // Whichever is further apart is the one we use to shift the array.
+  let max = ydiff > xdiff ? yonly.indexOf(Math.min(...yonly)) : xonly.indexOf(Math.min(...xonly))
+
   // This loops esentially shifts the array so that the minimum x is first.
-  for(i = 0; i <= xonly.indexOf(Math.min(...xonly)); i++) {
+  for(i = 0; i <= max; i++) {
     xy.push(xy.shift());
   };
 
