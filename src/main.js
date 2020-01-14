@@ -41,7 +41,9 @@ overlay.append("polygon").attr("stroke", "red").attr("stroke-width", 2)
 overlay.append("polygon").attr("stroke", "red").attr("stroke-width", 2)
        .attr("fill", "red").attr("fill-opacity", 0.2).attr("id", "survey_right");
 
-
+// Add the base image.
+im_layer.append("svg:image").attr("width", 1024).attr("height", 1024)
+        .attr("xlink:href", src).attr("id", "image")
 
 // Roughly but not exactly the RA/Dec of Polaris.
 var ra = 2.5 * 15;
@@ -276,11 +278,9 @@ function update_ecliptic() {
 var counter = 0
 // Catchall function for drawing the image with everything on top of it.
 function draw_canvas() {
-  im_layer.select("image").remove(); // Remove the old image to plot a new one.
-
   // The new fetched image.
-  im_layer.append("svg:image").attr("width", 1024).attr("height", 1024)
-      .attr("xlink:href", src).attr("id", "image").attr("class", "NO-CACHE");
+  let imsrc = src + "?" + Date.now()
+  im_layer.select("image").attr("xlink:href", imsrc).attr("id", "image");
 
   update_ecliptic()
   update_galactic_plane()
