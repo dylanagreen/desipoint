@@ -275,13 +275,9 @@ function update_ecliptic() {
   });
 }
 
-var counter = 0
 // Catchall function for drawing the image with everything on top of it.
 function draw_canvas() {
-  // The new fetched image.
-  let imsrc = src + "?" + Date.now()
-  im_layer.select("image").attr("xlink:href", imsrc).attr("id", "image");
-
+  // Updates for each individual piece
   update_ecliptic()
   update_galactic_plane()
   update_survey()
@@ -290,9 +286,19 @@ function draw_canvas() {
   let new_coords = radec_to_xy(ra, dec)
   circ.attr("cx", new_coords[0]).attr("cy", new_coords[1])
 }
+
+function update_image() {
+  // The new fetched image.
+  let imsrc = src + "?" + Date.now()
+  im_layer.select("image").attr("xlink:href", imsrc).attr("id", "image");
+}
+
 draw_canvas() // Call the draw function first to draw everything.
+update_image()
+
 // Exectutes the update function every 120 seconds
 d3.interval(draw_canvas, 120 * 1000)
+d3.interval(update_image, 120 * 1000)
 
 // BUTTONS BELOW THIS POINT
 
