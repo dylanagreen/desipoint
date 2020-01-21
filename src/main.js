@@ -45,9 +45,13 @@ overlay.append("polygon").attr("stroke", "red").attr("stroke-width", 2)
 im_layer.append("svg:image").attr("width", 1024).attr("height", 1024)
         .attr("xlink:href", src).attr("id", "image")
 
-// Roughly but not exactly the RA/Dec of Polaris.
-var ra = 2.5 * 15;
-var dec = 89;
+
+// Roughly but not exactly the RA/Dec of Polaris as defaults
+const urlParams = new URLSearchParams(window.location.search);
+var url_ra = urlParams.get("ra");
+var ra = url_ra != null ? parseFloat(url_ra) : 2.5  * 15;
+var url_dec = urlParams.get("dec");
+var dec = url_dec != null ? parseFloat(url_dec) : 89;
 
 // Start of the J2000 Epoch is January 1, 2000 at 1200 UT.
 // So year = 2000, month = 0 (January), day = 1, hour = 12
