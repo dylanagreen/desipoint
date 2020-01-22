@@ -7,7 +7,8 @@ const mw_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/master/
 const ecliptic_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/master/src/ecliptic.json"
 
 // Image location
-var src = "http://gagarin.lpl.arizona.edu/allsky/AllSkyCurrentImage.JPG";
+// var src = "http://gagarin.lpl.arizona.edu/allsky/AllSkyCurrentImage.JPG";
+var src = "http://varuna.kpno.noao.edu/allsky/AllSkyCurrentImage.JPG"
 
 // Variables to hold the opacity of each element.
 var survey_opacity = 1;
@@ -48,10 +49,10 @@ im_layer.append("svg:image").attr("width", 1024).attr("height", 1024)
 
 // Roughly but not exactly the RA/Dec of Polaris as defaults
 const urlParams = new URLSearchParams(window.location.search);
-var url_ra = urlParams.get("ra");
-var ra = url_ra != null ? parseFloat(url_ra) : 2.5  * 15;
-var url_dec = urlParams.get("dec");
-var dec = url_dec != null ? parseFloat(url_dec) : 89;
+var url_ra = parseFloat(urlParams.get("ra"));
+var ra = isNaN(url_ra) ? 2.5 * 15 : url_ra//2.5  * 15;
+var url_dec = parseFloat(urlParams.get("dec"));
+var dec = isNaN(url_dec) ? 89 : url_dec//89;
 
 // Start of the J2000 Epoch is January 1, 2000 at 1200 UT.
 // So year = 2000, month = 0 (January), day = 1, hour = 12
@@ -300,8 +301,8 @@ function update_image() {
 draw_canvas() // Call the draw function first to draw everything.
 update_image()
 
-// Exectutes the update function every 120 seconds
-d3.interval(draw_canvas, 120 * 1000)
+// Exectutes the update function every 60 seconds for the canvas, 120 for the image
+d3.interval(draw_canvas, 60 * 1000)
 d3.interval(update_image, 120 * 1000)
 
 // BUTTONS BELOW THIS POINT
