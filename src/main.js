@@ -187,7 +187,23 @@ var timer = d3.interval(update_clock, 100);
 let ra_rounded = Math.round(ra * 1000) / 1000;
 let dec_rounded = Math.round(dec * 1000) / 1000;
 let coord_text = "RA:" + ra_rounded + "\tDEC:" + dec_rounded;
-var coords = svg.append("text").attr("x", 1029).attr("y", 1.5 * t_size + 85).attr("font-size", t_size / 2 + "px").text(coord_text);
+
+// Don't think I need to ever access these again so I shouldn't need to put them
+// into a variable.
+svg.append("text").attr("x", 1029).attr("y", 1.5 * t_size + 135)
+   .attr("font-size", t_size / 2 + "px").text("RA:");
+svg.append("text").attr("x", 1029).attr("y", 1.5 * t_size + 235)
+   .attr("font-size", t_size / 2 + "px").text("DEC:");
+
+var ra_text = svg.append("foreignObject").attr("width", 512).attr("height", 500)
+                 .attr("x", 1029 + 250).attr("y", 1.5 * t_size + 50)
+                 .append("xhtml:div").style("font", t_size / 2 + "px Times")
+                 .html(ra_rounded);
+
+var dec_text = svg.append("foreignObject").attr("width", 512).attr("height", 500)
+                  .attr("x", 1029 + 250).attr("y", 1.5 * t_size + 150)
+                  .append("xhtml:div").style("font", t_size / 2 + "px Times")
+                  .html(dec_rounded);
 
 function update_survey() {
   // Plotting the survey area in red.
@@ -219,7 +235,7 @@ function shift_and_join(xy) {
     return d[1];
   });
 
-  // Fund the difference between the x and y coordinates of the endpoints.
+  // Find the difference between the x and y coordinates of the endpoints.
   let xdiff = Math.max(...xonly) - Math.min(...xonly)
   let ydiff = Math.max(...yonly) - Math.min(...yonly)
 
@@ -338,3 +354,5 @@ function toggle_ecliptic() {
 }
 
 d3.select("#D").on("change", toggle_ecliptic)
+
+console.log(parseFloat(svg.select("foreignObject").select("div").html()))
