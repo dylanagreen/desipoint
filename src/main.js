@@ -49,16 +49,27 @@ im_layer.append("svg:image").attr("width", 1024).attr("height", 1024)
 
 // Roughly but not exactly the RA/Dec of Polaris as defaults
 const urlParams = new URLSearchParams(window.location.search);
-var url_ra = parseFloat(urlParams.get("ra"));
-var ra = isNaN(url_ra) ? 2.5 * 15 : url_ra//2.5  * 15;
-var url_dec = parseFloat(urlParams.get("dec"));
-var dec = isNaN(url_dec) ? 89 : url_dec//89;
+var ra = 2.5 * 15
+var dec = 89
+if (urlParams.has("ra")) {
+  var url_ra = urlParams.get("ra");
+  if (!Number.isNaN(url_ra)){
+    ra = Number(url_ra)
+  }
+}
+
+if (urlParams.has("dec")) {
+  var url_dec = urlParams.get("dec");
+  if (!Number.isNaN(url_dec)){
+    dec = Number(url_dec)
+  }
+}
 
 // Start of the J2000 Epoch is January 1, 2000 at 1200 UT.
 // So year = 2000, month = 0 (January), day = 1, hour = 12
 // minute = 0, second = 0
 // Need to use this specific constructor because Date.parse() and all other constructors
-// behave differently in different browsers (I ran into this because I use Safari)
+// behave differently in different browsers (I ran into this because I used Safari)
 const epoch_start = new Date(Date.UTC(2000, 0, 1, 12, 00, 00));
 
 function radec_to_xy(ra, dec){
@@ -198,12 +209,12 @@ svg.append("text").attr("x", 1029).attr("y", 1.5 * t_size + 235)
 var ra_text = svg.append("foreignObject").attr("width", 512).attr("height", 500)
                  .attr("x", 1029 + 250).attr("y", 1.5 * t_size + 50)
                  .append("xhtml:div").style("font", t_size / 2 + "px Times")
-                 .html(ra_rounded);
+                 .attr("contentEditable", true).html(ra_rounded);
 
 var dec_text = svg.append("foreignObject").attr("width", 512).attr("height", 500)
                   .attr("x", 1029 + 250).attr("y", 1.5 * t_size + 150)
                   .append("xhtml:div").style("font", t_size / 2 + "px Times")
-                  .html(dec_rounded);
+                  .attr("contentEditable", true).html(dec_rounded);
 
 function update_survey() {
   // Plotting the survey area in red.
@@ -296,16 +307,19 @@ function update_ecliptic() {
   });
 }
 
+function update_pointing() {
+  // Updates the circle's coordinates
+  let new_coords = radec_to_xy(ra, dec)
+  circ.attr("cx", new_coords[0]).attr("cy", new_coords[1])
+}
+
 // Catchall function for drawing the image with everything on top of it.
 function draw_canvas() {
   // Updates for each individual piece
   update_ecliptic()
   update_galactic_plane()
   update_survey()
-
-  // Updates the circle's coordinates
-  let new_coords = radec_to_xy(ra, dec)
-  circ.attr("cx", new_coords[0]).attr("cy", new_coords[1])
+  update_pointing()
 }
 
 function update_image() {
@@ -314,12 +328,20 @@ function update_image() {
   im_layer.select("image").attr("xlink:href", imsrc).attr("id", "image");
 }
 
+// function update_coords() {
+//   console.log(Number(ra_text.html()))
+//   console.log(Number(dec_text.html()))
+
+// }
+
 draw_canvas() // Call the draw function first to draw everything.
 update_image()
 
 // Exectutes the update function every 60 seconds for the canvas, 120 for the image
 d3.interval(draw_canvas, 60 * 1000)
 d3.interval(update_image, 120 * 1000)
+
+// d3.interval(update_coords, 1000)
 
 // BUTTONS BELOW THIS POINT
 
@@ -354,5 +376,3 @@ function toggle_ecliptic() {
 }
 
 d3.select("#D").on("change", toggle_ecliptic)
-
-console.log(parseFloat(svg.select("foreignObject").select("div").html()))
