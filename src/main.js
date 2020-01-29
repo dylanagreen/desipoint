@@ -320,6 +320,10 @@ function draw_canvas() {
   update_galactic_plane()
   update_survey()
   update_pointing()
+
+  // Resetting the text fields to whatever the new RA/DEC is in case they change.
+  ra_text.html(Math.round(ra * 1000) / 1000)
+  dec_text.html(Math.round(dec * 1000) / 1000)
 }
 
 function update_image() {
@@ -328,11 +332,24 @@ function update_image() {
   im_layer.select("image").attr("xlink:href", imsrc).attr("id", "image");
 }
 
-// function update_coords() {
-//   console.log(Number(ra_text.html()))
-//   console.log(Number(dec_text.html()))
+function update_coords() {
+  var ra_str = ra_text.html(); // Get the text from the html.
+  ra_str = ra_str.replace(/<[^>]*>?/gm, ''); // Fancy regex I found.
+  var new_ra = Number(ra_str)
+  // Sets the ra to the new one as long as its not nan and is allowed.
+  if (!Number.isNaN(new_ra)) {
+    ra = Number(new_ra)
+  }
 
-// }
+  var dec_str = dec_text.html(); // Get the text from the html.
+  dec_str = dec_str.replace(/<[^>]*>?/gm, ''); // Fancy regex I found.
+  var new_dec = Number(dec_str)
+  if (!Number.isNaN(new_dec)) {
+    dec = Number(new_dec)
+  }
+
+  update_pointing() // Updates the telescope dot itself.
+}
 
 draw_canvas() // Call the draw function first to draw everything.
 update_image()
@@ -341,7 +358,7 @@ update_image()
 d3.interval(draw_canvas, 60 * 1000)
 d3.interval(update_image, 120 * 1000)
 
-// d3.interval(update_coords, 1000)
+d3.interval(update_coords, 1000)
 
 // BUTTONS BELOW THIS POINT
 
