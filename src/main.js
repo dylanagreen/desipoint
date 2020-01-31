@@ -47,6 +47,7 @@ im_layer.append("svg:image").attr("width", 1024).attr("height", 1024)
         .attr("xlink:href", src).attr("id", "image")
 
 
+// Sets up the telescope pointing.
 // Roughly but not exactly the RA/Dec of Polaris as defaults
 const urlParams = new URLSearchParams(window.location.search);
 var ra = 2.5 * 15
@@ -72,6 +73,7 @@ if (urlParams.has("dec")) {
 // behave differently in different browsers (I ran into this because I used Safari)
 const epoch_start = new Date(Date.UTC(2000, 0, 1, 12, 00, 00));
 
+// Function that converts from ra dec to xy
 function radec_to_xy(ra, dec){
   let seconds = (Date.now() - epoch_start) / 1000; // Number of seconds elapsed since J2000
 
@@ -197,7 +199,27 @@ var timer = d3.interval(update_clock, 100);
 // Rounds to the nearest 1000th in one step.
 let ra_rounded = Math.round(ra * 1000) / 1000;
 let dec_rounded = Math.round(dec * 1000) / 1000;
-let coord_text = "RA:" + ra_rounded + "\tDEC:" + dec_rounded;
+var clean = false
+
+function update_coords() {
+  var ra_str = ra_text.html(); // Get the text from the html.
+  ra_str = ra_str.replace(/<[^>]*>?/gm, ''); // Fancy regex I found.
+  var new_ra = Number(ra_str)
+  // Sets the ra to the new one as long as its not nan and is allowed.
+  if (!Number.isNaN(new_ra)) {
+    ra = Number(new_ra)
+  }
+
+  var dec_str = dec_text.html(); // Get the text from the html.
+  dec_str = dec_str.replace(/<[^>]*>?/gm, ''); // Fancy regex I found.
+  var new_dec = Number(dec_str)
+  if (!Number.isNaN(new_dec)) {
+    dec = Number(new_dec)
+  }
+
+  update_pointing() // Updates the telescope dot itself.
+  clean = true
+}
 
 // Don't think I need to ever access these again so I shouldn't need to put them
 // into a variable.
@@ -209,12 +231,31 @@ svg.append("text").attr("x", 1029).attr("y", 1.5 * t_size + 235)
 var ra_text = svg.append("foreignObject").attr("width", 512).attr("height", 500)
                  .attr("x", 1029 + 250).attr("y", 1.5 * t_size + 50)
                  .append("xhtml:div").style("font", t_size / 2 + "px Times")
-                 .attr("contentEditable", true).html(ra_rounded);
+                 .attr("contentEditable", true).html(ra_rounded)
+                 .on("keypress", function() {
+                  if(d3.event.keyCode === 13){
+                    update_coords()
+                  }
+                });
 
 var dec_text = svg.append("foreignObject").attr("width", 512).attr("height", 500)
                   .attr("x", 1029 + 250).attr("y", 1.5 * t_size + 150)
                   .append("xhtml:div").style("font", t_size / 2 + "px Times")
-                  .attr("contentEditable", true).html(dec_rounded);
+                  .attr("contentEditable", true).html(dec_rounded)
+                  .on("keypress", function() {
+                    if(d3.event.keyCode === 13){
+                      update_coords()
+                    }
+                  });
+
+function clean_text() {
+  if (clean) {
+    ra_text.html(Math.round(ra * 1000) / 1000)
+    dec_text.html(Math.round(dec * 1000) / 1000)
+  }
+  clean = false
+}
+d3.interval(clean_text, 100)
 
 function update_survey() {
   // Plotting the survey area in red.
@@ -332,33 +373,12 @@ function update_image() {
   im_layer.select("image").attr("xlink:href", imsrc).attr("id", "image");
 }
 
-function update_coords() {
-  var ra_str = ra_text.html(); // Get the text from the html.
-  ra_str = ra_str.replace(/<[^>]*>?/gm, ''); // Fancy regex I found.
-  var new_ra = Number(ra_str)
-  // Sets the ra to the new one as long as its not nan and is allowed.
-  if (!Number.isNaN(new_ra)) {
-    ra = Number(new_ra)
-  }
-
-  var dec_str = dec_text.html(); // Get the text from the html.
-  dec_str = dec_str.replace(/<[^>]*>?/gm, ''); // Fancy regex I found.
-  var new_dec = Number(dec_str)
-  if (!Number.isNaN(new_dec)) {
-    dec = Number(new_dec)
-  }
-
-  update_pointing() // Updates the telescope dot itself.
-}
-
 draw_canvas() // Call the draw function first to draw everything.
 update_image()
 
 // Exectutes the update function every 60 seconds for the canvas, 120 for the image
 d3.interval(draw_canvas, 60 * 1000)
 d3.interval(update_image, 120 * 1000)
-
-d3.interval(update_coords, 1000)
 
 // BUTTONS BELOW THIS POINT
 
