@@ -28,12 +28,10 @@ var overlay = svg.append("g")
 // circle is the highest object in z-order.
 
 // Ecliptic base
-overlay.append("g").attr("id", "ecliptic")//.attr("stroke", "cyan").attr("stroke-width", 2)
-      //  .attr("fill", "none");
+overlay.append("g").attr("id", "ecliptic");
 
 // Galactic plane base
-overlay.append("g").attr("stroke", "magenta").attr("stroke-width", 2)
-       .attr("fill", "none").attr("id", "mw")
+overlay.append("g").attr("id", "mw");
 
 // Survey Bases
 overlay.append("polygon").attr("stroke", "red").attr("stroke-width", 2)
@@ -308,12 +306,11 @@ function update_galactic_plane() {
     circles.enter().append("circle")
            .attr("cx", function(d) { return d[0]; })
            .attr("cy", function(d) { return d[1]; })
-           .attr("r", 2)
+           .attr("r", 1.1)
            .attr("fill", "magenta");
   });
 }
 
-var first = true
 function update_ecliptic() {
   // Line indicating the barycentric mean ecliptic
   d3.json(ecliptic_data).then(function(d) {
@@ -345,7 +342,7 @@ function update_ecliptic() {
     circles.enter().append("circle")
            .attr("cx", function(d) { return d[0]; })
            .attr("cy", function(d) { return d[1]; })
-           .attr("r", 2)
+           .attr("r", 1.1)
            .attr("fill", "cyan");
   });
 }
