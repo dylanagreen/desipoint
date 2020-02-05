@@ -28,11 +28,11 @@ var overlay = svg.append("g")
 // circle is the highest object in z-order.
 
 // Ecliptic base
-overlay.append("polyline").attr("stroke", "cyan").attr("stroke-width", 2)
-       .attr("fill", "none").attr("id", "ecliptic");
+overlay.append("g").attr("id", "ecliptic")//.attr("stroke", "cyan").attr("stroke-width", 2)
+      //  .attr("fill", "none");
 
 // Galactic plane base
-overlay.append("polyline").attr("stroke", "magenta").attr("stroke-width", 2)
+overlay.append("g").attr("stroke", "magenta").attr("stroke-width", 2)
        .attr("fill", "none").attr("id", "mw")
 
 // Survey Bases
@@ -277,35 +277,6 @@ function update_survey() {
   });
 }
 
-function shift_and_join(xy) {
-  // Only the x values of the array to find the min.
-  var xonly = xy.map(function(d) {
-    return d[0];
-  });
-
-  var yonly = xy.map(function(d) {
-    return d[1];
-  });
-
-  // Find the difference between the x and y coordinates of the endpoints.
-  let xdiff = Math.max(...xonly) - Math.min(...xonly)
-  let ydiff = Math.max(...yonly) - Math.min(...yonly)
-
-  // Whichever is further apart is the one we use to shift the array.
-  let max = ydiff > xdiff ? yonly.indexOf(Math.min(...yonly)) : xonly.indexOf(Math.min(...xonly))
-
-  // This loops esentially shifts the array so that the minimum x is first.
-  for(i = 0; i <= max; i++) {
-    xy.push(xy.shift());
-  };
-
-  // Join the points into a continuous string
-  let joined = xy.map(function(d) {
-    return d.join(",")
-  });
-  return joined.join(" ");
-}
-
 function update_galactic_plane() {
   // Line indicating the plane of the milky way
   d3.json(mw_data).then(function(d) {
@@ -322,11 +293,27 @@ function update_galactic_plane() {
       return d != null;
     }); // Strip out the nulll elements
 
-    let points = shift_and_join(xy);
-    overlay.select("polyline#mw").attr("points", points);
+    // Selects all the dots and update the data array.
+    var circles = overlay.select("g#mw").selectAll("circle").data(xy);
+
+    // Removes any circles that don't have new positions i.e. if we have less
+    // circles than before
+    circles.exit().remove()
+
+    // Updates the positions of the remaining circles.
+    circles.attr("cx", function(d) { return d[0]; })
+           .attr("cy", function(d) { return d[1]; });
+
+    // Adds any required circles, i.e. if we have more points than before.
+    circles.enter().append("circle")
+           .attr("cx", function(d) { return d[0]; })
+           .attr("cy", function(d) { return d[1]; })
+           .attr("r", 2)
+           .attr("fill", "magenta");
   });
 }
 
+var first = true
 function update_ecliptic() {
   // Line indicating the barycentric mean ecliptic
   d3.json(ecliptic_data).then(function(d) {
@@ -341,10 +328,25 @@ function update_ecliptic() {
       }
     }).filter(function(d) {
       return d != null;
-    }); // Strip out the nulll elements
+    }); // Strip out the null elements
 
-    let points = shift_and_join(xy);
-    overlay.select("polyline#ecliptic").attr("points", xy);
+    // Selects all the dots and update the data array.
+    var circles = overlay.select("g#ecliptic").selectAll("circle").data(xy);
+
+    // Removes any circles that don't have new positions i.e. if we have less
+    // circles than before
+    circles.exit().remove()
+
+    // Updates the positions of the remaining circles.
+    circles.attr("cx", function(d) { return d[0]; })
+           .attr("cy", function(d) { return d[1]; });
+
+    // Adds any required circles, i.e. if we have more points than before.
+    circles.enter().append("circle")
+           .attr("cx", function(d) { return d[0]; })
+           .attr("cy", function(d) { return d[1]; })
+           .attr("r", 2)
+           .attr("fill", "cyan");
   });
 }
 
@@ -377,7 +379,7 @@ draw_canvas() // Call the draw function first to draw everything.
 update_image()
 
 // Exectutes the update function every 60 seconds for the canvas, 120 for the image
-d3.interval(draw_canvas, 60 * 1000)
+d3.interval(draw_canvas, 6 * 1000)
 d3.interval(update_image, 120 * 1000)
 
 // BUTTONS BELOW THIS POINT
@@ -401,7 +403,7 @@ d3.select("#B").on("change", toggle_survey)
 // Function for toggling the galactic plane on and off.
 function toggle_mw() {
   mw_opacity = mw_opacity == 1 ? 0 : 1
-  svg.select("polyline#mw").style("opacity", mw_opacity)
+  svg.select("g#mw").style("opacity", mw_opacity)
 }
 
 d3.select("#C").on("change", toggle_mw)
@@ -409,7 +411,7 @@ d3.select("#C").on("change", toggle_mw)
 // Function for toggling the galactic plane on and off.
 function toggle_ecliptic() {
   ecliptic_opacity = ecliptic_opacity == 1 ? 0 : 1
-  svg.select("polyline#ecliptic").style("opacity", ecliptic_opacity)
+  svg.select("g#ecliptic").style("opacity", ecliptic_opacity)
 }
 
 d3.select("#D").on("change", toggle_ecliptic)
