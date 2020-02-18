@@ -200,7 +200,8 @@ let dec_rounded = Math.round(dec * 1000) / 1000;
 var clean = false
 
 function update_coords() {
-  var ra_str = ra_text.html(); // Get the text from the html.
+  var ra_str = document.getElementById("ra").value
+  // var ra_str = ra_text.html(); // Get the text from the html.
   ra_str = ra_str.replace(/<[^>]*>?/gm, ''); // Fancy regex I found.
   var new_ra = Number(ra_str)
   // Sets the ra to the new one as long as its not nan and is allowed.
@@ -208,7 +209,8 @@ function update_coords() {
     ra = Number(new_ra)
   }
 
-  var dec_str = dec_text.html(); // Get the text from the html.
+  var dec_str = document.getElementById("dec").value
+  // var dec_str = dec_text.html(); // Get the text from the html.
   dec_str = dec_str.replace(/<[^>]*>?/gm, ''); // Fancy regex I found.
   var new_dec = Number(dec_str)
   if (!Number.isNaN(new_dec)) {
@@ -227,19 +229,17 @@ svg.append("text").attr("x", 1029).attr("y", 1.5 * t_size + 235)
    .attr("font-size", t_size / 2 + "px").text("DEC:");
 
 var ra_text = svg.append("foreignObject").attr("width", 512).attr("height", 500)
-                 .attr("x", 1029 + 250).attr("y", 1.5 * t_size + 50)
-                 .append("xhtml:div").style("font", t_size / 2 + "px Times")
-                 .attr("contentEditable", true).html(ra_rounded)
+                 .attr("x", 1029 + 250).attr("y", 1.5 * t_size + 40)
+                 .html("<input type=text id=ra size=5/>")
                  .on("keypress", function() {
-                  if(d3.event.keyCode === 13){
-                    update_coords()
-                  }
-                });
+                   if(d3.event.keyCode === 13){
+                     update_coords()
+                   }
+                 });
 
-var dec_text = svg.append("foreignObject").attr("width", 512).attr("height", 500)
-                  .attr("x", 1029 + 250).attr("y", 1.5 * t_size + 150)
-                  .append("xhtml:div").style("font", t_size / 2 + "px Times")
-                  .attr("contentEditable", true).html(dec_rounded)
+var dec_text = svg.append("foreignObject").attr("width", 1024).attr("height", 500)
+                  .attr("x", 1029 + 250).attr("y", 1.5 * t_size + 145)
+                  .html("<input type=text id=dec size=5/>")
                   .on("keypress", function() {
                     if(d3.event.keyCode === 13){
                       update_coords()
@@ -253,7 +253,7 @@ function clean_text() {
   }
   clean = false
 }
-d3.interval(clean_text, 100)
+// d3.interval(clean_text, 100)
 
 function update_survey() {
   // Plotting the survey area in red.
@@ -362,8 +362,8 @@ function draw_canvas() {
   update_pointing()
 
   // Resetting the text fields to whatever the new RA/DEC is in case they change.
-  ra_text.html(Math.round(ra * 1000) / 1000)
-  dec_text.html(Math.round(dec * 1000) / 1000)
+  document.getElementById("ra").value = Math.round(ra * 1000) / 1000
+  document.getElementById("dec").value = Math.round(dec * 1000) / 1000
 }
 
 function update_image() {
@@ -376,7 +376,7 @@ draw_canvas() // Call the draw function first to draw everything.
 update_image()
 
 // Exectutes the update function every 60 seconds for the canvas, 120 for the image
-d3.interval(draw_canvas, 6 * 1000)
+d3.interval(draw_canvas, 60 * 1000)
 d3.interval(update_image, 120 * 1000)
 
 // BUTTONS BELOW THIS POINT
