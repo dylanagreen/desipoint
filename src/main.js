@@ -246,15 +246,6 @@ var dec_text = svg.append("foreignObject").attr("width", 1024).attr("height", 50
                     }
                   });
 
-function clean_text() {
-  if (clean) {
-    ra_text.html(Math.round(ra * 1000) / 1000)
-    dec_text.html(Math.round(dec * 1000) / 1000)
-  }
-  clean = false
-}
-// d3.interval(clean_text, 100)
-
 function update_survey() {
   // Plotting the survey area in red.
   d3.json(left_data).then(function(d) {
