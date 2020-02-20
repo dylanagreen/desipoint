@@ -237,7 +237,7 @@ var ra_text = svg.append("foreignObject").attr("width", 512).attr("height", 500)
                    if(d3.event.keyCode === 13){
                      update_coords()
                    }
-                 });
+                });
 
 var dec_text = svg.append("foreignObject").attr("width", 1024).attr("height", 500)
                   .attr("x", 1029 + 250).attr("y", 1.5 * t_size + 145)
@@ -247,6 +247,10 @@ var dec_text = svg.append("foreignObject").attr("width", 1024).attr("height", 50
                       update_coords()
                     }
                   });
+
+// Listener for the focus out update.
+document.getElementById("ra").addEventListener("focusout", update_coords)
+document.getElementById("dec").addEventListener("focusout", update_coords)
 
 function update_survey() {
   // Plotting the survey area in red.
