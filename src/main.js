@@ -201,20 +201,22 @@ var clean = false
 
 function update_coords() {
   var ra_str = document.getElementById("ra").value
-  // var ra_str = ra_text.html(); // Get the text from the html.
-  ra_str = ra_str.replace(/<[^>]*>?/gm, ''); // Fancy regex I found.
   var new_ra = Number(ra_str)
   // Sets the ra to the new one as long as its not nan and is allowed.
   if (!Number.isNaN(new_ra)) {
     ra = Number(new_ra)
   }
+  else {
+    document.getElementById("ra").value = ra
+  }
 
   var dec_str = document.getElementById("dec").value
-  // var dec_str = dec_text.html(); // Get the text from the html.
-  dec_str = dec_str.replace(/<[^>]*>?/gm, ''); // Fancy regex I found.
   var new_dec = Number(dec_str)
   if (!Number.isNaN(new_dec)) {
     dec = Number(new_dec)
+  }
+  else {
+    document.getElementById("dec").value = dec
   }
 
   update_pointing() // Updates the telescope dot itself.
@@ -403,3 +405,6 @@ function toggle_ecliptic() {
 }
 
 d3.select("#D").on("change", toggle_ecliptic)
+
+// jQuery.get("http://web.replicator.dev-cattle.stable.spin.nersc.org:60040/TV3/app/Q/query?namespace=telemetry&format=html&width=600&height=400&ymin=None&ymax=None&sql=select+date_ut%2Ctarget_ra%2Ctarget_dec+from+telemetry.tcs_info+order+by+tcs_info+desc+limit+1", success=function(d){console.log(d)})
+// console.log(jQuery.get("http://web.replicator.dev-cattle.stable.spin.nersc.org:60040/TV3/app/Q/query", "namespace=telemetry"))
