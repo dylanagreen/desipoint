@@ -14,7 +14,11 @@ var src = "http://varuna.kpno.noao.edu/allsky/AllSkyCurrentImage.JPG"
 var survey_opacity = 1;
 var mw_opacity = 1;
 var ecliptic_opacity = 1;
-var circ_opacity = 1
+var circ_opacity = 1;
+
+// Whether or not to update the display
+var update = true;
+var today = new Date();
 
 //viewBox is the size of the coordinate system so to speak, so the old 2048x1024
 var svg = d3.select("body").append("div").classed("svg-container", true).append("svg")
@@ -64,6 +68,40 @@ if (urlParams.has("dec")) {
   }
 }
 
+if (urlParams.has("time")){
+  var url_time = urlParams.get("time");
+  var test_date = new Date(url_time);
+  // Check to see if the date is valid.
+  if (isNaN(test_date.getTime())){
+    console.log("Invalid date entered");
+  }
+  else {
+    var temp_src = "http://varuna.kpno.noao.edu/allsky-all/images/cropped/";
+    temp_src = temp_src + test_date.getUTCFullYear().toString() + "/";
+
+    var month = (test_date.getUTCMonth() < 9 ? "0" : "") + (test_date.getUTCMonth() + 1);
+    var date = (test_date.getUTCDate() < 10 ? "0" : "") + test_date.getUTCDate();
+
+    temp_src = temp_src + month + "/";
+    temp_src = temp_src + date + "/";
+
+    var file_name = test_date.getUTCFullYear().toString() + month + date + "_";
+
+    var hour = (test_date.getUTCHours() < 10 ? "0" : "") + test_date.getUTCHours();
+    var temp_minute = test_date.getUTCMinutes();
+    temp_minute = temp_minute % 2 == 0 ? temp_minute : temp_minute - 1;
+    var minute = (temp_minute < 10 ? "0" : "") + temp_minute;
+
+    file_name = file_name + hour + minute + "05.jpg";
+    temp_src = temp_src + file_name;
+
+    // Set the image src to the, well, source.
+    src = temp_src;
+    update = false;
+    today = test_date;
+  }
+}
+
 // Start of the J2000 Epoch is January 1, 2000 at 1200 UT.
 // So year = 2000, month = 0 (January), day = 1, hour = 12
 // minute = 0, second = 0
@@ -73,14 +111,15 @@ const epoch_start = new Date(Date.UTC(2000, 0, 1, 12, 00, 00));
 
 // Function that converts from ra dec to xy
 function radec_to_xy(ra, dec){
-  let seconds = (Date.now() - epoch_start) / 1000; // Number of seconds elapsed since J2000
+  // Finds the number of hours into the universal time day we are
+  today = update ? new Date() : today;
+
+  let seconds = (today.getTime() - epoch_start) / 1000; // Number of seconds elapsed since J2000
 
   // Double checked this days count against somewhere else, seems accurate to
   // within 1/1000 of a day
   let days = seconds / 3600 / 24; // 3600 seconds in an hour 24 hours per day
 
-  // Finds the number of hours into the universal time day we are
-  var today = new Date();
   var ut = today.getUTCHours() +  today.getUTCMinutes() / 60;
 
   // Makes sure universal time is on 24 hour time and not 48.
@@ -175,7 +214,7 @@ var text = svg.append("text").attr("x", 1029).attr("y", t_size).attr("font-size"
 var ut_text = svg.append("text").attr("x", 1029).attr("y", 1.5 * t_size).attr("font-size", t_size / 2 + "px")
 
 function update_clock() {
-  today = new Date();
+  today = update ? new Date() : today;
   // Kind of ridiculous that this is the only way to get leading 0s on the
   // values if the're less than ten.
   var hour = (today.getUTCHours() < 10 ? "0" : "") + today.getUTCHours();
