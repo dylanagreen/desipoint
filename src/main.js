@@ -76,7 +76,6 @@ if (urlParams.has("time")){
     console.log("Invalid date entered");
   }
   else {
-    console.log(test_date > Date.now())
     var temp_src = "http://varuna.kpno.noao.edu/allsky-all/images/cropped/";
     temp_src = temp_src + test_date.getUTCFullYear().toString() + "/";
 
