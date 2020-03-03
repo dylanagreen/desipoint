@@ -72,11 +72,11 @@ if (urlParams.has("time")){
   var url_time = urlParams.get("time");
   var test_date = new Date(url_time);
   // Check to see if the date is valid.
-  if (isNaN(test_date.getTime())){
+  if (isNaN(test_date.getTime()) || test_date > Date.now()){
     console.log("Invalid date entered");
   }
   else {
-    // console.log(test_date > Date.now())
+    console.log(test_date > Date.now())
     var temp_src = "http://varuna.kpno.noao.edu/allsky-all/images/cropped/";
     temp_src = temp_src + test_date.getUTCFullYear().toString() + "/";
 
@@ -418,10 +418,9 @@ function update_image() {
 draw_canvas() // Call the draw function first to draw everything.
 update_image()
 
-// Exectutes the update function every 60 seconds for the canvas, 120 for the image
-d3.interval(draw_canvas, 60 * 1000)
-
 if (update) {
+  // Exectutes the update function every 60 seconds for the canvas, 120 for the image
+  d3.interval(draw_canvas, 60 * 1000)
   d3.interval(update_image, 120 * 1000)
 }
 
