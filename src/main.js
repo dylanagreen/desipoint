@@ -76,6 +76,7 @@ if (urlParams.has("time")){
     console.log("Invalid date entered");
   }
   else {
+    // console.log(test_date > Date.now())
     var temp_src = "http://varuna.kpno.noao.edu/allsky-all/images/cropped/";
     temp_src = temp_src + test_date.getUTCFullYear().toString() + "/";
 
@@ -409,11 +410,8 @@ function draw_canvas() {
 }
 
 function update_image() {
-  if (!update){
-    return
-  }
   // The new fetched image.
-  let imsrc = src + "?" + Date.now()
+  let imsrc = src + "?" + Date.now();
   im_layer.select("image").attr("xlink:href", imsrc).attr("id", "image");
 }
 
@@ -422,7 +420,10 @@ update_image()
 
 // Exectutes the update function every 60 seconds for the canvas, 120 for the image
 d3.interval(draw_canvas, 60 * 1000)
-d3.interval(update_image, 120 * 1000)
+
+if (update) {
+  d3.interval(update_image, 120 * 1000)
+}
 
 // BUTTONS BELOW THIS POINT
 
