@@ -79,12 +79,14 @@ if (urlParams.has("time")){
     var temp_src = "http://varuna.kpno.noao.edu/allsky-all/images/cropped/";
     temp_src = temp_src + test_date.getUTCFullYear().toString() + "/";
 
+    // Get the month and date for the url
     var month = (test_date.getUTCMonth() < 9 ? "0" : "") + (test_date.getUTCMonth() + 1);
     var date = (test_date.getUTCDate() < 10 ? "0" : "") + test_date.getUTCDate();
 
     temp_src = temp_src + month + "/";
     temp_src = temp_src + date + "/";
 
+    // Set up the filename.
     var file_name = test_date.getUTCFullYear().toString() + month + date + "_";
 
     var hour = (test_date.getUTCHours() < 10 ? "0" : "") + test_date.getUTCHours();
@@ -92,6 +94,7 @@ if (urlParams.has("time")){
     temp_minute = temp_minute % 2 == 0 ? temp_minute : temp_minute - 1;
     var minute = (temp_minute < 10 ? "0" : "") + temp_minute;
 
+    // Smash them together to set the image source.
     file_name = file_name + hour + minute + "05.jpg";
     temp_src = temp_src + file_name;
 
@@ -406,6 +409,9 @@ function draw_canvas() {
 }
 
 function update_image() {
+  if (!update){
+    return
+  }
   // The new fetched image.
   let imsrc = src + "?" + Date.now()
   im_layer.select("image").attr("xlink:href", imsrc).attr("id", "image");
