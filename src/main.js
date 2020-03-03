@@ -52,59 +52,65 @@ im_layer.append("svg:image").attr("width", 1024).attr("height", 1024)
 // Sets up the telescope pointing.
 // Roughly but not exactly the RA/Dec of Polaris as defaults
 const urlParams = new URLSearchParams(window.location.search);
+var it = urlParams.keys();
 var ra = 2.5 * 15
 var dec = 89
-if (urlParams.has("ra")) {
-  var url_ra = urlParams.get("ra");
-  if (!Number.isNaN(url_ra)){
-    ra = Number(url_ra)
+
+var result = it.next();
+for (const [key, val] of urlParams) {
+  if (key.toLowerCase() == "ra") {
+    var url_ra = val;
+    if (!Number.isNaN(url_ra)){
+      ra = Number(url_ra)
+    }
   }
+
+  if (key.toLowerCase() == "dec") {
+    var url_dec = val;
+    if (!Number.isNaN(url_dec)){
+      dec = Number(url_dec)
+    }
+  }
+
+  if (key.toLowerCase() == "time") {
+    var url_time = val;
+    var test_date = new Date(url_time);
+    // Check to see if the date is valid.
+    if (isNaN(test_date.getTime()) || test_date > Date.now()){
+      console.log("Invalid date entered");
+    }
+    else {
+      // Source where the old images are stored.
+      var temp_src = "http://varuna.kpno.noao.edu/allsky-all/images/cropped/";
+      temp_src = temp_src + test_date.getUTCFullYear().toString() + "/";
+
+      // Get the month and date for the url
+      var month = (test_date.getUTCMonth() < 9 ? "0" : "") + (test_date.getUTCMonth() + 1);
+      var date = (test_date.getUTCDate() < 10 ? "0" : "") + test_date.getUTCDate();
+
+      temp_src = temp_src + month + "/";
+      temp_src = temp_src + date + "/";
+
+      // Set up the filename.
+      var file_name = test_date.getUTCFullYear().toString() + month + date + "_";
+
+      var hour = (test_date.getUTCHours() < 10 ? "0" : "") + test_date.getUTCHours();
+      var temp_minute = test_date.getUTCMinutes();
+      temp_minute = temp_minute % 2 == 0 ? temp_minute : temp_minute - 1;
+      var minute = (temp_minute < 10 ? "0" : "") + temp_minute;
+
+      // Smash them together to set the image source.
+      file_name = file_name + hour + minute + "05.jpg";
+      temp_src = temp_src + file_name;
+
+      // Set the image src to the, well, source.
+      src = temp_src;
+      update = false;
+      today = test_date;
+    }
+  }
+  result = it.next();
 }
-
-if (urlParams.has("dec")) {
-  var url_dec = urlParams.get("dec");
-  if (!Number.isNaN(url_dec)){
-    dec = Number(url_dec)
-  }
-}
-
-if (urlParams.has("time")){
-  var url_time = urlParams.get("time");
-  var test_date = new Date(url_time);
-  // Check to see if the date is valid.
-  if (isNaN(test_date.getTime()) || test_date > Date.now()){
-    console.log("Invalid date entered");
-  }
-  else {
-    var temp_src = "http://varuna.kpno.noao.edu/allsky-all/images/cropped/";
-    temp_src = temp_src + test_date.getUTCFullYear().toString() + "/";
-
-    // Get the month and date for the url
-    var month = (test_date.getUTCMonth() < 9 ? "0" : "") + (test_date.getUTCMonth() + 1);
-    var date = (test_date.getUTCDate() < 10 ? "0" : "") + test_date.getUTCDate();
-
-    temp_src = temp_src + month + "/";
-    temp_src = temp_src + date + "/";
-
-    // Set up the filename.
-    var file_name = test_date.getUTCFullYear().toString() + month + date + "_";
-
-    var hour = (test_date.getUTCHours() < 10 ? "0" : "") + test_date.getUTCHours();
-    var temp_minute = test_date.getUTCMinutes();
-    temp_minute = temp_minute % 2 == 0 ? temp_minute : temp_minute - 1;
-    var minute = (temp_minute < 10 ? "0" : "") + temp_minute;
-
-    // Smash them together to set the image source.
-    file_name = file_name + hour + minute + "05.jpg";
-    temp_src = temp_src + file_name;
-
-    // Set the image src to the, well, source.
-    src = temp_src;
-    update = false;
-    today = test_date;
-  }
-}
-
 // Start of the J2000 Epoch is January 1, 2000 at 1200 UT.
 // So year = 2000, month = 0 (January), day = 1, hour = 12
 // minute = 0, second = 0
