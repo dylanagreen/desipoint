@@ -185,7 +185,10 @@ function update_clock() {
 
   ut_text.text(t);
 
-  hour = (today.getHours() < 10 ? "0" : "") + today.getHours();
+  var adjusted_hour = today.getUTCHours() - 7
+  // This line ensures that we work on 24 hour time and not negative time.
+  adjusted_hour = adjusted_hour < 0 ? adjusted_hour + 24 : adjusted_hour
+  hour = (adjusted_hour < 10 ? "0" : "") + adjusted_hour;
   t = hour + ":" + minute + ":" + second;
 
   text.text(t);
