@@ -214,8 +214,9 @@ let y = new_coords[1]
 
 // Circle at the given position.
 // I didn't know that chartreuse was a green color.
-var circ = overlay.append("circle").attr("r", 3.5).attr("cx", x).attr("cy", y)
-              .style("fill", "chartreuse").style("opacity", 1);
+var circ = overlay.append("circle").attr("r", 10).attr("cx", x).attr("cy", y)
+              .style("stroke", "chartreuse").style("stroke-width", 4)
+              .style("opacity", 1).style("fill-opacity", 0);
 
 // Handles the universal time clock on the right side.
 var t_size = 200
