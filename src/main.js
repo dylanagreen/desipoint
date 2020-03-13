@@ -464,5 +464,15 @@ function toggle_ecliptic() {
 
 d3.select("#D").on("change", toggle_ecliptic)
 
-// jQuery.get("http://web.replicator.dev-cattle.stable.spin.nersc.org:60040/TV3/app/Q/query?namespace=telemetry&format=html&width=600&height=400&ymin=None&ymax=None&sql=select+date_ut%2Ctarget_ra%2Ctarget_dec+from+telemetry.tcs_info+order+by+tcs_info+desc+limit+1", success=function(d){console.log(d)})
+var telemetry_link = "http://web.replicator.dev-cattle.stable.spin.nersc.org:60040/TV3/app/Q/query?namespace=telemetry&format=csv&width=600&height=400&ymin=None&ymax=None&sql=select+date_ut%2Ctarget_ra%2Ctarget_dec+from+telemetry.tcs_info+order+by+tcs_info+desc+limit+1"
+
+
+// console.log(jQuery.get("http://web.replicator.dev-cattle.stable.spin.nersc.org:60040/TV3/app/Q/query?namespace=telemetry&format=csv&width=600&height=400&ymin=None&ymax=None&sql=select+date_ut%2Ctarget_ra%2Ctarget_dec+from+telemetry.tcs_info+order+by+tcs_info+desc+limit+1", success=function(d){console.log(d)}))
+// jQuery.ajax(telemetry_link)
 // console.log(jQuery.get("http://web.replicator.dev-cattle.stable.spin.nersc.org:60040/TV3/app/Q/query", "namespace=telemetry"))
+
+d3.csv(telemetry_link, function(data) {
+  for (var i = 0; i < data.length; i++) {
+      console.log(data[i]);
+  }
+});
