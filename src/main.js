@@ -471,6 +471,8 @@ var telemetry_link = "http://web.replicator.dev-cattle.stable.spin.nersc.org:600
 // jQuery.ajax(telemetry_link)
 // console.log(jQuery.get("http://web.replicator.dev-cattle.stable.spin.nersc.org:60040/TV3/app/Q/query", "namespace=telemetry"))
 
+
+console.log("Begin test")
 d3.csv(telemetry_link, function(data) {
   for (var i = 0; i < data.length; i++) {
       console.log(data[i]);
