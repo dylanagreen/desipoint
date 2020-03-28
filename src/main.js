@@ -10,6 +10,10 @@ const ecliptic_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/m
 // var src = "http://gagarin.lpl.arizona.edu/allsky/AllSkyCurrentImage.JPG";
 var src = "http://varuna.kpno.noao.edu/allsky/AllSkyCurrentImage.JPG"
 
+// Location for the telemetry
+var telemetry_link = "http://web.replicator.dev-cattle.stable.spin.nersc.org:60040/TV3/app/Q/query?namespace=telemetry&format=jsonp&width=600&height=400&ymin=None&ymax=None&sql=select+date_ut%2Ctarget_ra%2Ctarget_dec+from+telemetry.tcs_info+order+by+tcs_info+desc+limit+1"
+var tracking = true // Whether or not to track the telescope's movements.
+
 // Variables to hold the opacity of each element.
 var survey_opacity = 1;
 var mw_opacity = 1;
@@ -249,7 +253,6 @@ var timer = d3.interval(update_clock, 100);
 // Rounds to the nearest 1000th in one step.
 let ra_rounded = Math.round(ra * 1000) / 1000;
 let dec_rounded = Math.round(dec * 1000) / 1000;
-var clean = false
 
 function update_coords() {
   var ra_str = document.getElementById("ra").value
@@ -271,8 +274,12 @@ function update_coords() {
     document.getElementById("dec").value = dec
   }
 
+  // If this function ever gets called its because someone probably modified
+  // (or clicked inside of) the text boxes. So turn off tracking.
+  tracking = false
+  update_tracking()
+
   update_pointing() // Updates the telescope dot itself.
-  clean = true
 }
 
 // Don't think I need to ever access these again so I shouldn't need to put them
@@ -281,6 +288,12 @@ svg.append("text").attr("x", 1029).attr("y", 1.5 * t_size + 135)
    .attr("font-size", t_size / 2 + "px").text("RA:");
 svg.append("text").attr("x", 1029).attr("y", 1.5 * t_size + 235)
    .attr("font-size", t_size / 2 + "px").text("DEC:");
+svg.append("text").attr("x", 1029).attr("y", 1.5 * t_size + 335)
+   .attr("font-size", t_size / 3 + "px").text("TRACKING:");
+
+var tracking_text = svg.append("text").attr("x", 1400)
+                       .attr("y", 1.5 * t_size + 335)
+                       .attr("font-size", t_size / 3 + "px");
 
 var ra_text = svg.append("foreignObject").attr("width", 512).attr("height", 500)
                  .attr("x", 1029 + 250).attr("y", 1.5 * t_size + 40)
@@ -396,10 +409,50 @@ function update_ecliptic() {
   });
 }
 
+// Helper function that parses the incoming json.
+function parseResponse(d) {
+  ra = Number(d["results"][0]["target_ra"]);
+  dec = Number(d["results"][0]["target_dec"]);
+}
+
 function update_pointing() {
-  // Updates the circle's coordinates
-  let new_coords = radec_to_xy(ra, dec)
-  circ.attr("cx", new_coords[0]).attr("cy", new_coords[1])
+
+  function move(){
+    // Updates the circle's coordinates
+    let new_coords = radec_to_xy(ra, dec);
+    circ.attr("cx", new_coords[0]).attr("cy", new_coords[1]);
+    // Resetting the text fields to whatever the new RA/DEC is in case they change.
+    document.getElementById("ra").value = Math.round(ra * 1000) / 1000;
+    document.getElementById("dec").value = Math.round(dec * 1000) / 1000;
+  }
+
+  // This moves the circle. If we're tracking we need to get the new data first
+  // We do this this way due to the async nature of ajax. If we just put the
+  // Code after the ajax call it won't be until the NEXT update pointing
+  // call that the text and circle are actaully updated to the previous
+  // telemetry value. This way it will update it (asynchronously) as soon
+  // as the data finall arrives.
+  if (tracking) {
+    $.ajax({
+      async: false,
+      type: "GET",
+      dataType: "jsonp",
+      url: telemetry_link,
+      complete: move
+    });
+  }
+  else {
+    move();
+  }
+}
+
+function update_tracking() {
+  if (tracking) {
+    tracking_text.style("fill", "chartreuse").text("ON");
+  }
+  else {
+    tracking_text.style("fill", "red").text("OFF");
+  }
 }
 
 // Catchall function for drawing the image with everything on top of it.
@@ -409,10 +462,7 @@ function draw_canvas() {
   update_galactic_plane()
   update_survey()
   update_pointing()
-
-  // Resetting the text fields to whatever the new RA/DEC is in case they change.
-  document.getElementById("ra").value = Math.round(ra * 1000) / 1000
-  document.getElementById("dec").value = Math.round(dec * 1000) / 1000
+  update_tracking()
 }
 
 function update_image() {
@@ -463,18 +513,3 @@ function toggle_ecliptic() {
 }
 
 d3.select("#D").on("change", toggle_ecliptic)
-
-var telemetry_link = "http://web.replicator.dev-cattle.stable.spin.nersc.org:60040/TV3/app/Q/query?namespace=telemetry&format=csv&width=600&height=400&ymin=None&ymax=None&sql=select+date_ut%2Ctarget_ra%2Ctarget_dec+from+telemetry.tcs_info+order+by+tcs_info+desc+limit+1"
-
-
-// console.log(jQuery.get("http://web.replicator.dev-cattle.stable.spin.nersc.org:60040/TV3/app/Q/query?namespace=telemetry&format=csv&width=600&height=400&ymin=None&ymax=None&sql=select+date_ut%2Ctarget_ra%2Ctarget_dec+from+telemetry.tcs_info+order+by+tcs_info+desc+limit+1", success=function(d){console.log(d)}))
-// jQuery.ajax(telemetry_link)
-// console.log(jQuery.get("http://web.replicator.dev-cattle.stable.spin.nersc.org:60040/TV3/app/Q/query", "namespace=telemetry"))
-
-
-console.log("Begin test")
-d3.csv(telemetry_link, function(data) {
-  for (var i = 0; i < data.length; i++) {
-      console.log(data[i]);
-  }
-});
