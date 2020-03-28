@@ -65,6 +65,7 @@ for (const [key, val] of urlParams) {
   if (key.toLowerCase() == "ra") {
     var url_ra = val;
     if (!Number.isNaN(url_ra)){
+      tracking = false
       ra = Number(url_ra)
     }
   }
@@ -72,11 +73,13 @@ for (const [key, val] of urlParams) {
   if (key.toLowerCase() == "dec") {
     var url_dec = val;
     if (!Number.isNaN(url_dec)){
+      tracking = false
       dec = Number(url_dec)
     }
   }
 
   if (key.toLowerCase() == "time") {
+    tracking = false
     var url_time = val;
     var test_date = new Date(url_time);
     // Check to see if the date is valid.
