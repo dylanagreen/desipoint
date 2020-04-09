@@ -11,7 +11,7 @@ from astropy.table import Table
 from PIL import Image
 
 import argparse
-import ast
+import json
 import os
 from io import BytesIO
 
@@ -145,10 +145,8 @@ def create_video(toggle_mw=False, toggle_ep=False, toggle_survey=False):
     if toggle_survey:
         hull_loc = os.path.join(os.path.dirname(__file__), "src", "survey_left.json")
         with open(hull_loc, "r") as f:
-
             # Converts the string representation of the list to a list of points.
-            left = f.readline()
-            left = ast.literal_eval(left)
+            left = json.load(f)
 
             left_ra = [c[0]for c in left]
             left_dec = [c[1] for c in left]
@@ -156,9 +154,7 @@ def create_video(toggle_mw=False, toggle_ep=False, toggle_survey=False):
         # Load the DESI survey area
         hull_loc = os.path.join(os.path.dirname(__file__), "src", "survey_right.json")
         with open(hull_loc, "r") as f:
-
-            right = f.readline()
-            right = ast.literal_eval(right)
+            right = json.load(f)
 
             right_ra = [c[0]for c in right]
             right_dec = [c[1] for c in right]
@@ -177,8 +173,7 @@ def create_video(toggle_mw=False, toggle_ep=False, toggle_survey=False):
     if toggle_mw:
         mw_loc = os.path.join(os.path.dirname(__file__), "src", "mw.json")
         with open(mw_loc, "r") as f:
-            mw = f.readline()
-            mw = ast.literal_eval(mw)
+            mw = json.load(f)
 
             # Makes the line dotted with 5 dot size gaps between the dots.
             mw = mw[::6]
@@ -194,8 +189,7 @@ def create_video(toggle_mw=False, toggle_ep=False, toggle_survey=False):
     if toggle_ep:
         ep_loc = os.path.join(os.path.dirname(__file__), "src", "ecliptic.json")
         with open(ep_loc, "r") as f:
-            ep = f.readline()
-            ep = ast.literal_eval(ep)
+            ep = json.load(f)
 
             ep2 = []
             for i in range(len(ep)):
