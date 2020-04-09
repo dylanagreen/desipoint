@@ -71,7 +71,7 @@ class AllSkyImage():
         self.data = data
         self.time = time
 
-def create_video(toggle_mw=False, toggle_ep=False):
+def create_video(toggle_mw=False, toggle_ep=False, toggle_survey=False):
 
     date = "20200316"
     base_url = "http://varuna.kpno.noao.edu/allsky-all/images/cropped/"
@@ -109,52 +109,18 @@ def create_video(toggle_mw=False, toggle_ep=False):
     print("Images downloaded, beginning overlay process.")
     print("Printing every 10th frame.")
 
-    # Load the DESI survey area
-    hull_loc = os.path.join(os.path.dirname(__file__), "data", "hull_radec.txt")
-    with open(hull_loc, "r") as f:
+    # Function that trims off any points that are outside the ~512 radius circle
+    def trim(x_in, y_in):
+        x = 512 - np.copy(x_in)
+        y = 512 - np.copy(y_in)
+        r = np.hypot(x, y)
 
-        # Converts the string representation of the list to a list of points.
-        left = f.readline()
-        left = ast.literal_eval(left)
+        for i in range(len(r)):
+            if r[i] > 504:
+                x[i] = float("nan")
+                y[i] = float("nan")
 
-        left_ra = [c[0]for c in left]
-        left_dec = [c[1] for c in left]
-
-        right = f.readline()
-        right = ast.literal_eval(right)
-
-        right_ra = [c[0]for c in right]
-        right_dec = [c[1] for c in right]
-
-    # Load the Milky Way
-    if toggle_mw:
-        mw_loc = os.path.join(os.path.dirname(__file__), "src", "mw.json")
-        with open(mw_loc, "r") as f:
-            mw = f.readline()
-            mw = ast.literal_eval(mw)
-
-            # Makes the line dotted with 5 dot size gaps between the dots.
-            mw = mw[::6]
-
-            mw_ra = [c[0]for c in mw]
-            mw_dec = [c[1] for c in mw]
-
-    # Load the ecliptic
-    if toggle_ep:
-        ep_loc = os.path.join(os.path.dirname(__file__), "src", "ecliptic.json")
-        with open(ep_loc, "r") as f:
-            ep = f.readline()
-            ep = ast.literal_eval(ep)
-
-            ep2 = []
-            for i in range(len(ep)):
-                if i % 10 >= 2 and i % 10 <= 5:
-                    ep2.append(ep[i])
-
-            ep = ep2
-
-            ep_ra = [c[0]for c in ep]
-            ep_dec = [c[1] for c in ep]
+        return (512 - x, 512 - y)
 
     # Load the data for the pointing
     t = Table.read(os.path.join("data", f"night{date}.csv"))
@@ -175,44 +141,78 @@ def create_video(toggle_mw=False, toggle_ep=False):
     ax.set_axis_off()
     fig.add_axes(ax)
 
+    # Load the DESI survey area
+    if toggle_survey:
+        hull_loc = os.path.join(os.path.dirname(__file__), "src", "survey_left.json")
+        with open(hull_loc, "r") as f:
+
+            # Converts the string representation of the list to a list of points.
+            left = f.readline()
+            left = ast.literal_eval(left)
+
+            left_ra = [c[0]for c in left]
+            left_dec = [c[1] for c in left]
+
+        # Load the DESI survey area
+        hull_loc = os.path.join(os.path.dirname(__file__), "src", "survey_right.json")
+        with open(hull_loc, "r") as f:
+
+            right = f.readline()
+            right = ast.literal_eval(right)
+
+            right_ra = [c[0]for c in right]
+            right_dec = [c[1] for c in right]
+
+        # Generating the x/y points for the desi survey areas
+        left_x, left_y = radec_to_xy(left_ra, left_dec, images[0].time)
+        left = [(left_x[i], left_y[i]) for i, _ in enumerate(left_x)]
+
+        right_x, right_y = radec_to_xy(right_ra, right_dec, images[0].time)
+        right = [(right_x[i], right_y[i]) for i, _ in enumerate(right_x)]
+
+        patch1 = ax.add_patch(Polygon(left, ec=(1, 0, 0, 1), fc=(1, 0, 0, 0.05), lw=1))
+        patch2 = ax.add_patch(Polygon(right, ec=(1, 0, 0, 1), fc=(1, 0, 0, 0.05), lw=1))
+
+    # Load the Milky Way
+    if toggle_mw:
+        mw_loc = os.path.join(os.path.dirname(__file__), "src", "mw.json")
+        with open(mw_loc, "r") as f:
+            mw = f.readline()
+            mw = ast.literal_eval(mw)
+
+            # Makes the line dotted with 5 dot size gaps between the dots.
+            mw = mw[::6]
+
+            mw_ra = [c[0]for c in mw]
+            mw_dec = [c[1] for c in mw]
+
+            mw_x, mw_y = radec_to_xy(mw_ra, mw_dec, images[0].time)
+            mw_x, mw_y = trim(mw_x, mw_y)
+            mw_scatter = ax.scatter(mw_x, mw_y, c=[(1, 0, 1, 1)], s=1)
+
+    # Load the ecliptic
+    if toggle_ep:
+        ep_loc = os.path.join(os.path.dirname(__file__), "src", "ecliptic.json")
+        with open(ep_loc, "r") as f:
+            ep = f.readline()
+            ep = ast.literal_eval(ep)
+
+            ep2 = []
+            for i in range(len(ep)):
+                if i % 10 >= 2 and i % 10 <= 5:
+                    ep2.append(ep[i])
+
+            ep = ep2
+            ep_ra = [c[0]for c in ep]
+            ep_dec = [c[1] for c in ep]
+
+            ep_x, ep_y = radec_to_xy(ep_ra, ep_dec, images[0].time)
+            ep_x, ep_y = trim(ep_x, ep_y)
+            ep_scatter = ax.scatter(ep_x, ep_y, c=[(0, 1, 1, 1)], s=1)
+
     # Adds the image into the axes and displays it
     im = ax.imshow(images[0].data, cmap="gray", vmin=0, vmax=255)
-
-    # Generating the x/y points for the desi survey areas
-    left_x, left_y = radec_to_xy(left_ra, left_dec, images[0].time)
-    left = [(left_x[i], left_y[i]) for i, _ in enumerate(left_x)]
-
-    right_x, right_y = radec_to_xy(right_ra, right_dec, images[0].time)
-    right = [(right_x[i], right_y[i]) for i, _ in enumerate(right_x)]
-
-    def trim(x_in, y_in):
-        x = 512 - np.copy(x_in)
-        y = 512 - np.copy(y_in)
-        r = np.hypot(x, y)
-
-        for i in range(len(r)):
-            if r[i] > 504:
-                x[i] = float("nan")
-                y[i] = float("nan")
-
-        return (512 - x, 512 - y)
-
-    if toggle_mw:
-        mw_x, mw_y = radec_to_xy(mw_ra, mw_dec, images[0].time)
-        mw_x, mw_y = trim(mw_x, mw_y)
-        mw_scatter = ax.scatter(mw_x, mw_y, c=[(1, 0, 1, 1)], s=1)
-
-    if toggle_ep:
-        ep_x, ep_y = radec_to_xy(ep_ra, ep_dec, images[0].time)
-        ep_x, ep_y = trim(ep_x, ep_y)
-        ep_scatter = ax.scatter(ep_x, ep_y, c=[(0, 1, 1, 1)], s=1)
-
-
-    patch1 = ax.add_patch(Polygon(left, ec=(1, 0, 0, 1), fc=(1, 0, 0, 0.05), lw=1))
-    patch2 = ax.add_patch(Polygon(right, ec=(1, 0, 0, 1), fc=(1, 0, 0, 0.05), lw=1))
-
     telescope = ax.add_patch(Circle(altaz_to_xy(t["alt"][0], t["az"][0]), ec=(0, 1, 0, 1), fill=False, radius=10))
-
     coverup = ax.add_patch(Rectangle((0, 1024 - 50), 300, 50, fc = "black"))
 
     temp_text = t["label"][0]
@@ -237,16 +237,18 @@ def create_video(toggle_mw=False, toggle_ep=False):
         # on screen for two frames.
         n = (n) // 2
 
-        left_x, left_y = radec_to_xy(left_ra, left_dec, images[n].time)
-        left = [(left_x[i], left_y[i]) for i, _ in enumerate(left_x)]
+        if toggle_survey:
+            left_x, left_y = radec_to_xy(left_ra, left_dec, images[n].time)
+            left = [(left_x[i], left_y[i]) for i, _ in enumerate(left_x)]
 
-        right_x, right_y = radec_to_xy(right_ra, right_dec, images[n].time)
-        right = [(right_x[i], right_y[i]) for i, _ in enumerate(right_x)]
+            right_x, right_y = radec_to_xy(right_ra, right_dec, images[n].time)
+            right = [(right_x[i], right_y[i]) for i, _ in enumerate(right_x)]
 
-        patch1.set_xy(left)
-        patch2.set_xy(right)
+            patch1.set_xy(left)
+            patch2.set_xy(right)
 
-
+        # Set offsets updates the positions of all the points defining the milky
+        # way and ecliptic lines.
         if toggle_mw:
             mw_x, mw_y = radec_to_xy(mw_ra, mw_dec, images[n].time)
             mw_x, mw_y = trim(mw_x, mw_y)
@@ -271,7 +273,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-mw", "--milkyway", help="toggle the milky way", action="store_true")
     parser.add_argument("-ep", "--ecliptic", help="toggle the ecliptic", action="store_true")
+    parser.add_argument("-s", "--survey", help="toggle the survey area", action="store_true")
 
     args = parser.parse_args()
 
-    create_video(args.milkyway, args.ecliptic)
+    create_video(args.milkyway, args.ecliptic, args.survey)
