@@ -11,6 +11,7 @@ from astropy.table import Table
 from PIL import Image
 
 import argparse
+import csv
 import json
 import os
 from io import BytesIO
@@ -75,7 +76,6 @@ def create_video(toggle_mw=False, toggle_ep=False, toggle_survey=False):
 
     date = "20200316"
     base_url = "http://varuna.kpno.noao.edu/allsky-all/images/cropped/"
-    image_names = sorted(os.listdir(os.path.join(os.path.dirname(__file__), "Images", "Original", "SW", date)))
 
     # Start and end times for image range.
     d = date[:4] + "-" + date[4:6] + "-" + date[6:8]
@@ -121,9 +121,6 @@ def create_video(toggle_mw=False, toggle_ep=False, toggle_survey=False):
                 y[i] = float("nan")
 
         return (512 - x, 512 - y)
-
-    # Load the data for the pointing
-    t = Table.read(os.path.join("data", f"night{date}.csv"))
 
     # Set up the figure the same way we usually do for saving so the image is the
     # only thing on the axis.
@@ -206,36 +203,41 @@ def create_video(toggle_mw=False, toggle_ep=False, toggle_survey=False):
 
     # Adds the image into the axes and displays it
     im = ax.imshow(images[0].data, cmap="gray", vmin=0, vmax=255)
-    telescope = ax.add_patch(Circle(altaz_to_xy(t["alt"][0], t["az"][0]), ec=(0, 1, 0, 1), fill=False, radius=10))
+    telescope = ax.add_patch(Circle((0, 0), ec=(0, 1, 0, 1), fill=False, radius=10))
     coverup = ax.add_patch(Rectangle((0, 1024 - 50), 300, 50, fc = "black"))
 
-    temp_text = t["label"][0]
-    text_time = ax.text(0, 1024 - 30, temp_text[0:8], fontsize=22, color="white")
-    text_prog = ax.text(175, 1024 - 30, temp_text[8:], fontsize=22, color="white")
+    temp_text = str(start_time).split(" ")[1]
+    text_time = ax.text(0, 1024 - 30, temp_text[0:5], fontsize=22, color="white")
 
     def update_img(n):
         if n % 10 == 0: print(n)
-        n = n # Need to increment n by 1 for labeling purposes.
-        temp_text = t["label"][n]
-        text_time.set_text(temp_text[0:8])
-        if temp_text[8:] != "":
-            text_prog.set_text(temp_text[8:])
-            text_prog.set_alpha(1)
-        else:
-            text_prog.set_alpha(0.5)
 
-        telescope.set_center(altaz_to_xy(t["alt"][n], t["az"][n]))
+        cur_time = images[n // 2].time
+        if n % 2 == 1:
+          cur_time = cur_time + TimeDelta(60, format="sec")
 
-        # Index for accessing the correct image for this frame.
-        # Since each frame is a minute and each image is two, each image stays
-        # on screen for two frames.
-        n = (n) // 2
+        # Updates the clock at the lower left corner.
+        temp_text = str(cur_time).split(" ")[1]
+        text_time.set_text(temp_text[0:5])
+
+        base_url = "http://web.replicator.dev-cattle.stable.spin.nersc.org:60040/TV3/app/Q/query"
+        params = {"namespace": "telemetry", "format": "csv",
+                  "sql": f"select time_recorded,sky_ra,sky_dec from telemetry.tcs_info order by ABS(EXTRACT(EPOCH from time_recorded-TIMESTAMP '{str(cur_time)}+00:00')) asc limit 1"}
+        # Ok so first get the resulting call, and decode it because its in bytes
+        # then feed it to a csv reader which we then convert to a list so
+        # now the table is a 2-d list. Then we pull out the ra/dec from that
+        # and convert it then finally we can move the telescope.
+        r = requests.get(base_url, params=params)
+        decoded = r.content.decode("utf-8")
+        cr = csv.reader(decoded.splitlines(), delimiter=',')
+        results = list(cr)
+        telescope.set_center(radec_to_xy(results[1][1], results[1][2], cur_time))
 
         if toggle_survey:
-            left_x, left_y = radec_to_xy(left_ra, left_dec, images[n].time)
+            left_x, left_y = radec_to_xy(left_ra, left_dec, cur_time)
             left = [(left_x[i], left_y[i]) for i, _ in enumerate(left_x)]
 
-            right_x, right_y = radec_to_xy(right_ra, right_dec, images[n].time)
+            right_x, right_y = radec_to_xy(right_ra, right_dec, cur_time)
             right = [(right_x[i], right_y[i]) for i, _ in enumerate(right_x)]
 
             patch1.set_xy(left)
@@ -244,17 +246,21 @@ def create_video(toggle_mw=False, toggle_ep=False, toggle_survey=False):
         # Set offsets updates the positions of all the points defining the milky
         # way and ecliptic lines.
         if toggle_mw:
-            mw_x, mw_y = radec_to_xy(mw_ra, mw_dec, images[n].time)
+            mw_x, mw_y = radec_to_xy(mw_ra, mw_dec, cur_time)
             mw_x, mw_y = trim(mw_x, mw_y)
             mw = [(mw_x[i], mw_y[i]) for i, _ in enumerate(mw_x)]
             mw_scatter.set_offsets(mw)
 
         if toggle_ep:
-            ep_x, ep_y = radec_to_xy(ep_ra, ep_dec, images[n].time)
+            ep_x, ep_y = radec_to_xy(ep_ra, ep_dec, cur_time)
             ep_x, ep_y = trim(ep_x, ep_y)
             ep = [(ep_x[i], ep_y[i]) for i, _ in enumerate(ep_x)]
             ep_scatter.set_offsets(ep)
 
+        # Index for accessing the correct image for this frame.
+        # Since each frame is a minute and each image is two, each image stays
+        # on screen for two frames.
+        n = n // 2
         im.set_data(images[n].data)
         return im
 
