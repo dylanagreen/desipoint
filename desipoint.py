@@ -14,6 +14,7 @@ import argparse
 import csv
 import json
 import os
+import time
 from io import BytesIO
 
 # In order to remove dependencies on kpno-allsky I've ported these functions
@@ -106,8 +107,65 @@ def create_video(toggle_mw=False, toggle_ep=False, toggle_survey=False):
         # Increment to next image 120 seconds later.
         cur_time = cur_time + TimeDelta(120, format="sec")
 
-    print("Images downloaded, beginning overlay process.")
-    print("Printing every 10th frame.")
+    print("Images downloaded, retrieving telemetry data.")
+
+    base_url = "http://web.replicator.dev-cattle.stable.spin.nersc.org:60040/TV3/app/Q/query"
+    params = {"namespace": "telemetry", "format": "csv",
+              "sql": f"select time_recorded,mount_el,mount_az from telemetry.tcs_info where time_recorded >= TIMESTAMP '{str(start_time)}' AND time_recorded < TIMESTAMP '{str(end_time)}' order by time_recorded asc"}
+    # Ok so first get the resulting call, and decode it because its in bytes
+    # then feed it to a csv reader which we then convert to a list so
+    # now the table is a 2-d list.
+    r = requests.get(base_url, params=params)
+    decoded = r.content.decode("utf-8")
+    cr = csv.reader(decoded.splitlines(), delimiter=',')
+    results = list(cr)
+
+    # Then since the telemetry updates (on average) every ~4.3s, we need to
+    # only strip out the ones we want. So we loop over the telemetry
+    # and extra approx 20 timestamps near a minute later than the previous
+    # saved telemetry. We do this because it's way quicker to search 20
+    # rather than 10k for a single timestamp.
+    pre = 0
+    cur_time = start_time + TimeDelta(60, format="sec")
+
+    # Helper array of only the time stamps. This is the slowest part of this
+    # process, stripping out the time component only.
+    time_only = np.asarray([Time(r[0][:-6]) for r in results[1:-1]])
+
+    pointings = []
+    pointings.append(results[1])
+
+    # A small helper function that allows us to subtract times from a np array
+    # of times.
+    def sub_time(t1, t2):
+        t = t2 - t1
+        # Ensures we always find the lowest possible  positive difference
+        # from the next time.
+        if t < 0:
+          return 1000
+        else:
+          return t
+
+    v_sub = np.vectorize(sub_time)
+
+    # I am fairly confident that the next 60s later update appears between 10
+    # and 30 telemetry updates from now.
+    # We find the next time by subtracting each stamp from the current one
+    # and then finding the minimum positive distance. Then the last update
+    # BEFORE the one minute per frame update is that index - 1. Don't need
+    # to subtract 1 since the addition of the column titles in results
+    # takes care of that already.
+    while cur_time < end_time:
+        truncated_time = time_only[pre + 10: pre + 30]
+        time_test = v_sub(truncated_time, cur_time)
+
+        pre = np.argmin(time_test) + pre + 10
+        pointings.append(results[pre])
+
+        cur_time += TimeDelta(60, format="sec")
+
+    print("Telemetry received and organized. Printing every 10th frame.")
+    start = time.time()
 
     # Function that trims off any points that are outside the ~512 radius circle
     def trim(x_in, y_in):
@@ -220,18 +278,8 @@ def create_video(toggle_mw=False, toggle_ep=False, toggle_survey=False):
         temp_text = str(cur_time).split(" ")[1]
         text_time.set_text(temp_text[0:5])
 
-        base_url = "http://web.replicator.dev-cattle.stable.spin.nersc.org:60040/TV3/app/Q/query"
-        params = {"namespace": "telemetry", "format": "csv",
-                  "sql": f"select time_recorded,sky_ra,sky_dec from telemetry.tcs_info order by ABS(EXTRACT(EPOCH from time_recorded-TIMESTAMP '{str(cur_time)}+00:00')) asc limit 1"}
-        # Ok so first get the resulting call, and decode it because its in bytes
-        # then feed it to a csv reader which we then convert to a list so
-        # now the table is a 2-d list. Then we pull out the ra/dec from that
-        # and convert it then finally we can move the telescope.
-        r = requests.get(base_url, params=params)
-        decoded = r.content.decode("utf-8")
-        cr = csv.reader(decoded.splitlines(), delimiter=',')
-        results = list(cr)
-        telescope.set_center(radec_to_xy(results[1][1], results[1][2], cur_time))
+        # Updates the telescope from the retrieved telemetry.
+        telescope.set_center(altaz_to_xy(float(pointings[n][1]), float(pointings[n][2])))
 
         if toggle_survey:
             left_x, left_y = radec_to_xy(left_ra, left_dec, cur_time)
@@ -268,6 +316,9 @@ def create_video(toggle_mw=False, toggle_ep=False, toggle_survey=False):
     writer = animation.writers['ffmpeg'](fps=20)
 
     ani.save(f"{date}.mp4", writer=writer, dpi=dpi)
+    end = time.time()
+
+    print(end-start)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
