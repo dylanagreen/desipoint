@@ -26,8 +26,9 @@ http://craven-paint.surge.sh.
 
 ## Details (Script)
 - desipoint.py script creates timelapse videos of the desipoint website overlay.
-- Planned command line switches:
-  - *--daterange* for providing a date range for the video.
-  - *--mw* for toggling the milky way plane
-  - *--ecliptic* (*--ep*) for toggling the ecliptic plane
-  - *--survey* for toggling the survey area
+- Start and end times are mandatory.
+- Command line switches:
+  - *--milkyway* (*-mw*) for toggling the milky way plane
+  - *--ecliptic* (*-ep*) for toggling the ecliptic plane
+  - *--survey* (*-s*)for toggling the survey area
+- Use *--help* for more details.
