@@ -8,7 +8,7 @@ from astropy.coordinates import SkyCoord, EarthLocation
 from matplotlib.patches import Polygon, Circle, Rectangle
 from astropy.time import Time, TimeDelta
 from astropy.table import Table
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 
 import argparse
 import csv
@@ -90,44 +90,18 @@ def create_video(start, end, toggle_mw=False, toggle_ep=False, toggle_survey=Fal
 
     # Loops over the given time period in 120s increments, getting the image at
     # each time step.
-    print("Preparing to download requested images.")
     print(f"Video start at {str(start_time)}")
     print(f"Video end at {str(end_time)}")
 
-    images = []
-    cur_time = start_time
-    while cur_time < end_time:
-        # Convert the time to a useable file name
-        t = str(cur_time)
-        d = t.split(" ")[0] # Extract the current date in case the range ticks over.
-        t = t.replace(":", "").replace("-", "").replace(" ", "_").split(".")[0]
-        file_name = t + ".jpg"
+    print("Preparing to download images and telemetry.")
 
-        # Get the image data for this time from the server and then load
-        url = base_url + d.replace("-", "/") + "/" + file_name
-        try:
-          response = requests.get(url)
-          img = np.asarray(Image.open(BytesIO(response.content)))
-        except Exception as e:
-          print(url)
-          raise e
-
-        # Generate the Image object for appending.
-        temp = AllSkyImage(img, cur_time)
-        images.append(temp)
-
-        # Increment to next image 120 seconds later.
-        cur_time = cur_time + TimeDelta(120, format="sec")
-
-    print("Images downloaded, retrieving telemetry data.")
-
-    base_url = "http://web.replicator.dev-cattle.stable.spin.nersc.org:60040/TV3/app/Q/query"
+    query_url = "http://web.replicator.dev-cattle.stable.spin.nersc.org:60040/TV3/app/Q/query"
     params = {"namespace": "telemetry", "format": "csv",
               "sql": f"select time_recorded,mount_el,mount_az from telemetry.tcs_info where time_recorded >= TIMESTAMP '{str(start_time)}' AND time_recorded < TIMESTAMP '{str(end_time)}' order by time_recorded asc"}
     # Ok so first get the resulting call, and decode it because its in bytes
     # then feed it to a csv reader which we then convert to a list so
     # now the table is a 2-d list.
-    r = requests.get(base_url, params=params)
+    r = requests.get(query_url, params=params)
     decoded = r.content.decode("utf-8")
     cr = csv.reader(decoded.splitlines(), delimiter=',')
     results = list(cr)
@@ -138,7 +112,6 @@ def create_video(start, end, toggle_mw=False, toggle_ep=False, toggle_survey=Fal
     # saved telemetry. We do this because it's way quicker to search 20
     # rather than 10k for a single timestamp.
     pre = 0
-    cur_time = start_time + TimeDelta(60, format="sec")
 
     # Helper array of only the time stamps. This is the slowest part of this
     # process, stripping out the time component only.
@@ -160,21 +133,49 @@ def create_video(start, end, toggle_mw=False, toggle_ep=False, toggle_survey=Fal
 
     v_sub = np.vectorize(sub_time)
 
-    # I am fairly confident that the next 60s later update appears between 10
-    # and 30 telemetry updates from now.
-    # We find the next time by subtracting each stamp from the current one
-    # and then finding the minimum positive distance. Then the last update
-    # BEFORE the one minute per frame update is that index - 1. Don't need
-    # to subtract 1 since the addition of the column titles in results
-    # takes care of that already.
+    images = []
+    cur_time = start_time
+    counter = 0
     while cur_time < end_time:
-        truncated_time = time_only[pre + 10: pre + 30]
-        time_test = v_sub(truncated_time, cur_time)
+        # Convert the time to a useable file name
+        t = str(cur_time)
+        d = t.split(" ")[0] # Extract the current date in case the range ticks over.
+        t = t.replace(":", "").replace("-", "").replace(" ", "_").split(".")[0]
+        file_name = t + ".jpg"
 
-        pre = np.argmin(time_test) + pre + 10
-        pointings.append(results[pre])
+        # Get the image data for this time from the server and then load
+        url = base_url + d.replace("-", "/") + "/" + file_name
+        try: # We only need to download images on even times.
+            if counter % 2 == 0:
+                response = requests.get(url)
+                img = np.asarray(Image.open(BytesIO(response.content)))
 
-        cur_time += TimeDelta(60, format="sec")
+                # Generate the Image object for appending.
+                temp = AllSkyImage(img, cur_time)
+                images.append(temp)
+
+        except UnidentifiedImageError:
+            print(f"{t} image not found, skipping")
+            # Increment to next image 120 seconds later.
+            counter += 2
+            cur_time += TimeDelta(120, format="sec")
+        else:
+            # I am fairly confident that the next 60s later update appears between 10
+            # and 30 telemetry updates from now.
+            # We find the next time by subtracting each stamp from the current one
+            # and then finding the minimum positive distance. Then the last update
+            # BEFORE the one minute per frame update is that index - 1. Don't need
+            # to subtract 1 since the addition of the column titles in results
+            # takes care of that already.
+            if counter > 1:
+                truncated_time = time_only[pre + 10: pre + 30]
+                time_test = v_sub(truncated_time, cur_time)
+
+                pre = np.argmin(time_test) + pre + 10
+                pointings.append(results[pre])
+            # Increment to next time 60 seconds later.
+            counter += 1
+            cur_time += TimeDelta(60, format="sec")
 
     print("Telemetry received and organized. Printing every 10th frame.")
 
@@ -332,8 +333,8 @@ def create_video(start, end, toggle_mw=False, toggle_ep=False, toggle_survey=Fal
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     # Required arguments
-    parser.add_argument("start", help="starting time of the video")
-    parser.add_argument("end", help="ending time of the video")
+    parser.add_argument("start", help="starting time of the video, in ISO-8601 format")
+    parser.add_argument("end", help="ending time of the video, in ISO-8601 format")
 
     # Optional arguments
     parser.add_argument("-mw", "--milkyway", help="toggle the milky way", action="store_true")
