@@ -14,7 +14,6 @@ import argparse
 import csv
 import json
 import os
-import time
 from io import BytesIO
 
 # In order to remove dependencies on kpno-allsky I've ported these functions
@@ -73,19 +72,28 @@ class AllSkyImage():
         self.data = data
         self.time = time
 
-def create_video(toggle_mw=False, toggle_ep=False, toggle_survey=False):
-
-    date = "20200316"
+def create_video(start, end, toggle_mw=False, toggle_ep=False, toggle_survey=False):
     base_url = "http://varuna.kpno.noao.edu/allsky-all/images/cropped/"
 
     # Start and end times for image range.
-    d = date[:4] + "-" + date[4:6] + "-" + date[6:8]
-    start_time = Time(d + " 02:30:05")
-    end_time = Time(d + " 13:00:00")
+    start_time = Time(start).iso
+    end_time = Time(end).iso
+
+    # Updating the start time to be the next avaliable image.
+    temp_start = str(start_time)
+    minutes = int(temp_start[-9:-7])
+    # Sets minutes to next even minute if it is odd, and remains the same if even
+    minutes = (minutes + 1) // 2 * 2
+    temp_start = temp_start[:-9] + str(minutes) + ":05.000"
+
+    start_time = Time(temp_start)
 
     # Loops over the given time period in 120s increments, getting the image at
     # each time step.
     print("Preparing to download requested images.")
+    print(f"Video start at {str(start_time)}")
+    print(f"Video end at {str(end_time)}")
+
     images = []
     cur_time = start_time
     while cur_time < end_time:
@@ -97,8 +105,12 @@ def create_video(toggle_mw=False, toggle_ep=False, toggle_survey=False):
 
         # Get the image data for this time from the server and then load
         url = base_url + d.replace("-", "/") + "/" + file_name
-        response = requests.get(url)
-        img = np.asarray(Image.open(BytesIO(response.content)))
+        try:
+          response = requests.get(url)
+          img = np.asarray(Image.open(BytesIO(response.content)))
+        except Exception as e:
+          print(url)
+          raise e
 
         # Generate the Image object for appending.
         temp = AllSkyImage(img, cur_time)
@@ -165,7 +177,6 @@ def create_video(toggle_mw=False, toggle_ep=False, toggle_survey=False):
         cur_time += TimeDelta(60, format="sec")
 
     print("Telemetry received and organized. Printing every 10th frame.")
-    start = time.time()
 
     # Function that trims off any points that are outside the ~512 radius circle
     def trim(x_in, y_in):
@@ -315,17 +326,20 @@ def create_video(toggle_mw=False, toggle_ep=False, toggle_survey=False):
     ani = animation.FuncAnimation(fig, update_img, len(images) * 2 - 1, interval=30)
     writer = animation.writers['ffmpeg'](fps=20)
 
+    date = str(start_time).split(" ")[0].replace("-", "")
     ani.save(f"{date}.mp4", writer=writer, dpi=dpi)
-    end = time.time()
-
-    print(end-start)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    # Required arguments
+    parser.add_argument("start", help="starting time of the video")
+    parser.add_argument("end", help="ending time of the video")
+
+    # Optional arguments
     parser.add_argument("-mw", "--milkyway", help="toggle the milky way", action="store_true")
     parser.add_argument("-ep", "--ecliptic", help="toggle the ecliptic", action="store_true")
     parser.add_argument("-s", "--survey", help="toggle the survey area", action="store_true")
 
     args = parser.parse_args()
 
-    create_video(args.milkyway, args.ecliptic, args.survey)
+    create_video(args.start, args.end, args.milkyway, args.ecliptic, args.survey)
