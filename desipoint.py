@@ -287,7 +287,7 @@ def create_video(start, end, toggle_mw=False, toggle_ep=False, toggle_survey=Fal
           cur_time = cur_time + TimeDelta(60, format="sec")
 
         # Updates the clock at the lower left corner.
-        temp_text = str(cur_time).split(" ")[1]
+        temp_text = str(cur_time - TimeDelta(6 * 3600, format="sec")).split(" ")[1]
         text_time.set_text(temp_text[0:5])
 
         # Updates the telescope from the retrieved telemetry.
