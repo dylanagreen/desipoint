@@ -72,7 +72,8 @@ class AllSkyImage():
         self.data = data
         self.time = time
 
-def create_video(start, end, toggle_mw=False, toggle_ep=False, toggle_survey=False):
+def create_video(start, end, toggle_mw=False, toggle_ep=False, toggle_survey=False,
+                 toggle_pointing=False):
     base_url = "http://varuna.kpno.noao.edu/allsky-all/images/cropped/"
 
     # Start and end times for image range.
@@ -93,45 +94,47 @@ def create_video(start, end, toggle_mw=False, toggle_ep=False, toggle_survey=Fal
     print(f"Video start at {str(start_time)}")
     print(f"Video end at {str(end_time)}")
 
-    print("Preparing to download images and telemetry.")
+    if toggle_pointing:
+        print("Preparing to download images and telemetry.")
+        query_url = "http://web.replicator.dev-cattle.stable.spin.nersc.org:60040/TV3/app/Q/query"
+        params = {"namespace": "telemetry", "format": "csv",
+                  "sql": f"select time_recorded,mount_el,mount_az from telemetry.tcs_info where time_recorded >= TIMESTAMP '{str(start_time)}' AND time_recorded < TIMESTAMP '{str(end_time)}' order by time_recorded asc"}
+        # Ok so first get the resulting call, and decode it because its in bytes
+        # then feed it to a csv reader which we then convert to a list so
+        # now the table is a 2-d list.
+        r = requests.get(query_url, params=params)
+        decoded = r.content.decode("utf-8")
+        cr = csv.reader(decoded.splitlines(), delimiter=',')
+        results = list(cr)
 
-    query_url = "http://web.replicator.dev-cattle.stable.spin.nersc.org:60040/TV3/app/Q/query"
-    params = {"namespace": "telemetry", "format": "csv",
-              "sql": f"select time_recorded,mount_el,mount_az from telemetry.tcs_info where time_recorded >= TIMESTAMP '{str(start_time)}' AND time_recorded < TIMESTAMP '{str(end_time)}' order by time_recorded asc"}
-    # Ok so first get the resulting call, and decode it because its in bytes
-    # then feed it to a csv reader which we then convert to a list so
-    # now the table is a 2-d list.
-    r = requests.get(query_url, params=params)
-    decoded = r.content.decode("utf-8")
-    cr = csv.reader(decoded.splitlines(), delimiter=',')
-    results = list(cr)
+        # Then since the telemetry updates (on average) every ~4.3s, we need to
+        # only strip out the ones we want. So we loop over the telemetry
+        # and extra approx 20 timestamps near a minute later than the previous
+        # saved telemetry. We do this because it's way quicker to search 20
+        # rather than 10k for a single timestamp.
+        pre = 0
 
-    # Then since the telemetry updates (on average) every ~4.3s, we need to
-    # only strip out the ones we want. So we loop over the telemetry
-    # and extra approx 20 timestamps near a minute later than the previous
-    # saved telemetry. We do this because it's way quicker to search 20
-    # rather than 10k for a single timestamp.
-    pre = 0
+        # Helper array of only the time stamps. This is the slowest part of this
+        # process, stripping out the time component only.
+        time_only = np.asarray([Time(r[0][:-6]) for r in results[1:-1]])
 
-    # Helper array of only the time stamps. This is the slowest part of this
-    # process, stripping out the time component only.
-    time_only = np.asarray([Time(r[0][:-6]) for r in results[1:-1]])
+        pointings = []
+        pointings.append(results[1])
 
-    pointings = []
-    pointings.append(results[1])
+        # A small helper function that allows us to subtract times from a np array
+        # of times.
+        def sub_time(t1, t2):
+            t = t2 - t1
+            # Ensures we always find the lowest possible  positive difference
+            # from the next time.
+            if t < 0:
+              return 1000
+            else:
+              return t
 
-    # A small helper function that allows us to subtract times from a np array
-    # of times.
-    def sub_time(t1, t2):
-        t = t2 - t1
-        # Ensures we always find the lowest possible  positive difference
-        # from the next time.
-        if t < 0:
-          return 1000
-        else:
-          return t
-
-    v_sub = np.vectorize(sub_time)
+        v_sub = np.vectorize(sub_time)
+    else:
+        print("Preparing to download images.")
 
     images = []
     cur_time = start_time
@@ -167,7 +170,7 @@ def create_video(start, end, toggle_mw=False, toggle_ep=False, toggle_survey=Fal
             # BEFORE the one minute per frame update is that index - 1. Don't need
             # to subtract 1 since the addition of the column titles in results
             # takes care of that already.
-            if counter > 1:
+            if toggle_pointing and counter > 1:
                 truncated_time = time_only[pre + 10: pre + 30]
                 time_test = v_sub(truncated_time, cur_time)
 
@@ -177,8 +180,11 @@ def create_video(start, end, toggle_mw=False, toggle_ep=False, toggle_survey=Fal
             counter += 1
             cur_time += TimeDelta(60, format="sec")
 
-    print("Telemetry received and organized. Printing every 10th frame.")
-
+    if toggle_pointing:
+        print("Telemetry and images received and organized.")
+    else:
+        print("Images downloaded.")
+    print("Printing every 10th frame.")
     # Function that trims off any points that are outside the ~512 radius circle
     def trim(x_in, y_in):
         x = 512 - np.copy(x_in)
@@ -273,7 +279,8 @@ def create_video(start, end, toggle_mw=False, toggle_ep=False, toggle_survey=Fal
 
     # Adds the image into the axes and displays it
     im = ax.imshow(images[0].data, cmap="gray", vmin=0, vmax=255)
-    telescope = ax.add_patch(Circle((0, 0), ec=(0, 1, 0, 1), fill=False, radius=10))
+    if toggle_pointing:
+        telescope = ax.add_patch(Circle((0, 0), ec=(0, 1, 0, 1), fill=False, radius=10))
     coverup = ax.add_patch(Rectangle((0, 1024 - 50), 300, 50, fc = "black"))
 
     temp_text = str(start_time).split(" ")[1]
@@ -290,8 +297,9 @@ def create_video(start, end, toggle_mw=False, toggle_ep=False, toggle_survey=Fal
         temp_text = str(cur_time - TimeDelta(6 * 3600, format="sec")).split(" ")[1]
         text_time.set_text(temp_text[0:5])
 
-        # Updates the telescope from the retrieved telemetry.
-        telescope.set_center(altaz_to_xy(float(pointings[n][1]), float(pointings[n][2])))
+        if toggle_pointing:
+            # Updates the telescope from the retrieved telemetry.
+            telescope.set_center(altaz_to_xy(float(pointings[n][1]), float(pointings[n][2])))
 
         if toggle_survey:
             left_x, left_y = radec_to_xy(left_ra, left_dec, cur_time)
@@ -340,7 +348,9 @@ if __name__ == "__main__":
     parser.add_argument("-mw", "--milkyway", help="toggle the milky way", action="store_true")
     parser.add_argument("-ep", "--ecliptic", help="toggle the ecliptic", action="store_true")
     parser.add_argument("-s", "--survey", help="toggle the survey area", action="store_true")
+    parser.add_argument("-p", "--pointing", help="toggle the telescope pointing", action="store_true")
 
     args = parser.parse_args()
 
-    create_video(args.start, args.end, args.milkyway, args.ecliptic, args.survey)
+    create_video(args.start, args.end, args.milkyway, args.ecliptic,
+                 args.survey, args.pointing)
