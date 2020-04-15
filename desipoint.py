@@ -349,8 +349,11 @@ if __name__ == "__main__":
     parser.add_argument("-ep", "--ecliptic", help="toggle the ecliptic", action="store_true")
     parser.add_argument("-s", "--survey", help="toggle the survey area", action="store_true")
     parser.add_argument("-p", "--pointing", help="toggle the telescope pointing", action="store_true")
+    parser.add_argument("-a", "--all", help="toggle everything", action="store_true")
 
     args = parser.parse_args()
-
-    create_video(args.start, args.end, args.milkyway, args.ecliptic,
-                 args.survey, args.pointing)
+    if args.all:
+        create_video(args.start, args.end, True, True, True, True)
+    else:
+        create_video(args.start, args.end, args.milkyway, args.ecliptic,
+                    args.survey, args.pointing)
