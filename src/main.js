@@ -11,7 +11,7 @@ const ecliptic_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/m
 var src = "http://varuna.kpno.noao.edu/allsky/AllSkyCurrentImage.JPG"
 
 // Location for the telemetry
-var telemetry_link = "http://web.replicator.dev-cattle.stable.spin.nersc.org:60040/TV3/app/Q/query?namespace=telemetry&format=jsonp&width=600&height=400&ymin=None&ymax=None&sql=select+date_ut%2Ctarget_ra%2Ctarget_dec+from+telemetry.tcs_info+order+by+tcs_info+desc+limit+1"
+var telemetry_link = "http://web.replicator.dev-cattle.stable.spin.nersc.org:60040/TV3/app/Q/query"
 var tracking = true // Whether or not to track the telescope's movements.
 
 // Variables to hold the opacity of each element.
@@ -441,6 +441,8 @@ function update_pointing() {
       type: "GET",
       dataType: "jsonp",
       url: telemetry_link,
+      data: {"namespace": "telemetry", "format": "jsonp",
+      "sql": "select date_ut,target_ra,target_dec from telemetry.tcs_info order by tcs_info desc limit 1"},
       complete: move
     });
   }
