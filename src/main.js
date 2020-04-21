@@ -99,7 +99,7 @@ for (const [key, val] of urlParams) {
       temp_src = temp_src + date + "/";
 
       // Set up the filename.
-      var file_name = test_date.getUTCFullYear().toString() + month + date + "_";
+      var file_name = test_date.getUTCFullYear() + month + date + "_";
 
       var hour = (test_date.getUTCHours() < 10 ? "0" : "") + test_date.getUTCHours();
       var temp_minute = test_date.getUTCMinutes();
@@ -114,6 +114,21 @@ for (const [key, val] of urlParams) {
       src = temp_src;
       update = false;
       today = test_date;
+
+      timestamp = test_date.getUTCFullYear() + "-" + month + "-" + date + " "
+      timestamp += hour + ":" + minute + ":" + test_date.getUTCSeconds()
+      console.log(timestamp)
+
+      // Put the telescope in the right place!
+      $.ajax({
+        async: false,
+        type: "GET",
+        dataType: "jsonp",
+        url: telemetry_link,
+        data: {"namespace": "telemetry", "format": "jsonp",
+        "sql": `select date_ut,target_ra,target_dec from telemetry.tcs_info where time_recorded < TIMESTAMP '${timestamp}' order by time_recorded desc limit 1`},
+        complete: move
+      });
     }
   }
   result = it.next();
@@ -418,23 +433,22 @@ function parseResponse(d) {
   dec = Number(d["results"][0]["target_dec"]);
 }
 
+function move(){
+  // Updates the circle's coordinates
+  let new_coords = radec_to_xy(ra, dec);
+  circ.attr("cx", new_coords[0]).attr("cy", new_coords[1]);
+  // Resetting the text fields to whatever the new RA/DEC is in case they change.
+  document.getElementById("ra").value = Math.round(ra * 1000) / 1000;
+  document.getElementById("dec").value = Math.round(dec * 1000) / 1000;
+}
+
 function update_pointing() {
-
-  function move(){
-    // Updates the circle's coordinates
-    let new_coords = radec_to_xy(ra, dec);
-    circ.attr("cx", new_coords[0]).attr("cy", new_coords[1]);
-    // Resetting the text fields to whatever the new RA/DEC is in case they change.
-    document.getElementById("ra").value = Math.round(ra * 1000) / 1000;
-    document.getElementById("dec").value = Math.round(dec * 1000) / 1000;
-  }
-
   // This moves the circle. If we're tracking we need to get the new data first
   // We do this this way due to the async nature of ajax. If we just put the
   // Code after the ajax call it won't be until the NEXT update pointing
   // call that the text and circle are actaully updated to the previous
   // telemetry value. This way it will update it (asynchronously) as soon
-  // as the data finall arrives.
+  // as the data finally arrives.
   if (tracking) {
     $.ajax({
       async: false,
