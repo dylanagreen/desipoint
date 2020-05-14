@@ -30,5 +30,7 @@ http://craven-paint.surge.sh.
 - Command line switches:
   - *--milkyway* (*-mw*) for toggling the milky way plane
   - *--ecliptic* (*-ep*) for toggling the ecliptic plane
-  - *--survey* (*-s*)for toggling the survey area
+  - *--survey* (*-s*) for toggling the survey area
+  - *--pointing* (*-p*) for toggling the telescope pointing
+  - *--all* (*-a*) for conveniently toggling on all of the above
 - Use *--help* for more details.

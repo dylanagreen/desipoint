@@ -94,15 +94,26 @@ def create_video(start, end, toggle_mw=False, toggle_ep=False, toggle_survey=Fal
     print(f"Video start at {str(start_time)}")
     print(f"Video end at {str(end_time)}")
 
+    try:
+        with open("auth.txt", "r") as f:
+            auth = json.load(f)
+    except Exception as e:
+        print("Loading authentication failed.")
+        print(e)
+        return
+
     if toggle_pointing:
         print("Preparing to download images and telemetry.")
-        query_url = "http://web.replicator.dev-cattle.stable.spin.nersc.org:60040/TV3/app/Q/query"
+        query_url = "https://replicator.desi.lbl.gov/TV3/app/Q/query"
         params = {"namespace": "telemetry", "format": "csv",
                   "sql": f"select time_recorded,mount_el,mount_az from telemetry.tcs_info where time_recorded >= TIMESTAMP '{str(start_time)}' AND time_recorded < TIMESTAMP '{str(end_time)}' order by time_recorded asc"}
         # Ok so first get the resulting call, and decode it because its in bytes
         # then feed it to a csv reader which we then convert to a list so
         # now the table is a 2-d list.
-        r = requests.get(query_url, params=params)
+        r = requests.get(query_url, params=params, auth=(auth["usr"], auth["pass"]))
+        if r.status_code == 401:
+          print("Invalid authentication!")
+          return
         decoded = r.content.decode("utf-8")
         cr = csv.reader(decoded.splitlines(), delimiter=',')
         results = list(cr)
