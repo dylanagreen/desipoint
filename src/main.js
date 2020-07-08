@@ -11,7 +11,7 @@ const ecliptic_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/m
 var src = "http://varuna.kpno.noao.edu/allsky/AllSkyCurrentImage.JPG"
 
 // Location for the telemetry
-var telemetry_link = "http://web.replicator.dev-cattle.stable.spin.nersc.org:60040/TV3/app/Q/query"
+var telemetry_link = "https://replicator.desi.lbl.gov/TV3/app/Q/query"
 var tracking = true // Whether or not to track the telescope's movements.
 
 // Variables to hold the opacity of each element.
@@ -79,7 +79,6 @@ for (const [key, val] of urlParams) {
   }
 
   if (key.toLowerCase() == "time") {
-    tracking = false
     var url_time = val;
     var test_date = new Date(url_time);
     // Check to see if the date is valid.
@@ -113,11 +112,12 @@ for (const [key, val] of urlParams) {
       // Set the image src to the, well, source.
       src = temp_src;
       update = false;
+      // Turn off tracking text when in lookback mode
+      tracking = false;
       today = test_date;
 
       timestamp = test_date.getUTCFullYear() + "-" + month + "-" + date + " "
       timestamp += hour + ":" + minute + ":" + test_date.getUTCSeconds()
-      console.log(timestamp)
 
       // Put the telescope in the right place!
       $.ajax({
@@ -125,6 +125,8 @@ for (const [key, val] of urlParams) {
         type: "GET",
         dataType: "jsonp",
         url: telemetry_link,
+        username: "",
+        password: "",
         data: {"namespace": "telemetry", "format": "jsonp",
         "sql": `select date_ut,target_ra,target_dec from telemetry.tcs_info where time_recorded < TIMESTAMP '${timestamp}' order by time_recorded desc limit 1`},
         complete: move
@@ -178,7 +180,7 @@ function radec_to_xy(ra, dec){
 
   // Finds sine of altitude hence taking asin after.
   // Cunning algorithm I found. Allegedly by Peter Duffet-Smith in
-  // Practical Astornomy with your Calculator
+  // Practical Astronomy with your Calculator
   var alt = Math.sin(dec) * Math.sin(lat) + Math.cos(dec) * Math.cos(lat) * Math.cos(hour);
   alt = Math.asin(alt)
 
@@ -248,7 +250,7 @@ var ut_text = svg.append("text").attr("x", 1029).attr("y", 1.5 * t_size).attr("f
 function update_clock() {
   today = update ? new Date() : today;
   // Kind of ridiculous that this is the only way to get leading 0s on the
-  // values if the're less than ten.
+  // values if they're less than ten.
   var hour = (today.getUTCHours() < 10 ? "0" : "") + today.getUTCHours();
   var minute = (today.getUTCMinutes() < 10 ? "0" : "") + today.getUTCMinutes();
   var second = (today.getUTCSeconds() < 10 ? "0" : "") + today.getUTCSeconds();
@@ -311,9 +313,18 @@ svg.append("text").attr("x", 1029).attr("y", 1.5 * t_size + 335)
 
 var tracking_text = svg.append("text").attr("x", 1400)
                        .attr("y", 1.5 * t_size + 335)
-                       .attr("font-size", t_size / 3 + "px");
+                       .attr("font-size", t_size / 3 + "px")
+                       .on("click", function(d) {
+                         // Inverts tracking then updates the text field then
+                         // moves the telescope pointer.
+                         if(update) {
+                          tracking = !tracking;
+                          update_tracking();
+                          update_pointing();
+                         }
+                        });
 
-var ra_text = svg.append("foreignObject").attr("width", 512).attr("height", 500)
+var ra_text = svg.append("foreignObject").attr("width", 400).attr("height", 110)
                  .attr("x", 1029 + 250).attr("y", 1.5 * t_size + 40)
                  .html("<input type=text id=ra size=5/>")
                  .on("keypress", function() {
@@ -322,7 +333,7 @@ var ra_text = svg.append("foreignObject").attr("width", 512).attr("height", 500)
                    }
                 });
 
-var dec_text = svg.append("foreignObject").attr("width", 1024).attr("height", 500)
+var dec_text = svg.append("foreignObject").attr("width", 400).attr("height", 110)
                   .attr("x", 1029 + 250).attr("y", 1.5 * t_size + 145)
                   .html("<input type=text id=dec size=5/>")
                   .on("keypress", function() {
@@ -369,7 +380,7 @@ function update_galactic_plane() {
       }
     }).filter(function(d) {
       return d != null;
-    }); // Strip out the nulll elements
+    }); // Strip out the null elements
 
     // Selects all the dots and update the data array.
     var circles = overlay.select("g#mw").selectAll("circle").data(xy);
@@ -446,7 +457,7 @@ function update_pointing() {
   // This moves the circle. If we're tracking we need to get the new data first
   // We do this this way due to the async nature of ajax. If we just put the
   // Code after the ajax call it won't be until the NEXT update pointing
-  // call that the text and circle are actaully updated to the previous
+  // call that the text and circle are actually updated to the previous
   // telemetry value. This way it will update it (asynchronously) as soon
   // as the data finally arrives.
   if (tracking) {
@@ -455,6 +466,8 @@ function update_pointing() {
       type: "GET",
       dataType: "jsonp",
       url: telemetry_link,
+      username: "",
+      password: "",
       data: {"namespace": "telemetry", "format": "jsonp",
       "sql": "select date_ut,target_ra,target_dec from telemetry.tcs_info order by tcs_info desc limit 1"},
       complete: move
@@ -494,7 +507,7 @@ draw_canvas() // Call the draw function first to draw everything.
 update_image()
 
 if (update) {
-  // Exectutes the update function every 60 seconds for the canvas, 120 for the image
+  // Executes the update function every 60 seconds for the canvas, 120 for the image
   d3.interval(draw_canvas, 60 * 1000)
   d3.interval(update_image, 120 * 1000)
 }

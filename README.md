@@ -5,9 +5,7 @@ The goal is to be able to actively monitor the pointing of the telescope on live
 images taken at the Spacewatch all-sky camera. desipoint additionally includes a
 paired down script version of the website, see below for details.
 
-desipoint is planned to be hosted here on this github page: https://dylanagreen.github.io/desipoint/.
-Currently there is an http/https interop problem, so temporarily desipoint is hosted here:
-http://craven-paint.surge.sh.
+desipoint is hosted here on this github page: https://dylanagreen.github.io/desipoint/.
 
 ## Details (Website)
 - Base image is the [Spacewatch all-sky image.](http://varuna.kpno.noao.edu/allsky/AllSkyCurrentImage.JPG)
@@ -23,6 +21,7 @@ http://craven-paint.surge.sh.
     - Ex *?time=2019-06-27T06:09:10.104Z*
 - Toggleable automatic telescope tracking
   - By default "telescope" will track the most recent pointing request.
+  - Clicking the "on" or "off" text will invert the tracking state.
 
 ## Details (Script)
 - desipoint.py script creates timelapse videos of the desipoint website overlay.
