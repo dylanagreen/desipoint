@@ -146,7 +146,6 @@ const epoch_start = new Date(Date.UTC(2000, 0, 1, 12, 00, 00));
 function radec_to_xy(ra, dec){
   // Finds the number of hours into the universal time day we are
   today = update ? new Date() : today;
-
   let seconds = (today.getTime() - epoch_start) / 1000; // Number of seconds elapsed since J2000
 
   // Double checked this days count against somewhere else, seems accurate to
@@ -161,13 +160,8 @@ function radec_to_xy(ra, dec){
   // Calculates Local Sidereal Time
   var lst = 100.46 + 0.985647 * days + pos[1] + 15 * ut;
 
-  // First step to bringing LST to within 0-360.
-  // Days is usually close to 7200 so this is a good first approximation
-  lst = lst - (360 * 20);
-
-  // Ensures lst is in the good range.
-  lst = (lst < 0) ? lst + 360 : lst;
-  lst = (lst > 360) ? lst - 360 : lst;
+  // We need the angle in the 0-360 range.
+  lst = lst % 360;
   // I double checked this as well and it is within a minute of real LST
 
   var hour = lst - ra; // Hour angle
