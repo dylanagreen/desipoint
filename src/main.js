@@ -147,6 +147,7 @@ function radec_to_xy(ra, dec){
   // Finds the number of hours into the universal time day we are
   today = update ? new Date() : today;
   let seconds = (today.getTime() - epoch_start) / 1000; // Number of seconds elapsed since J2000
+  const deg_to_rad = Math.PI / 180;
 
   // Double checked this days count against somewhere else, seems accurate to
   // within 1/1000 of a day
@@ -167,10 +168,10 @@ function radec_to_xy(ra, dec){
   var hour = lst - ra; // Hour angle
 
   // Conversions to radians
-  dec = dec * Math.PI / 180;
-  ra = ra * Math.PI / 180;
-  hour = hour * Math.PI / 180;
-  var lat = pos[0] * Math.PI / 180;
+  dec = dec * deg_to_rad;
+  ra = ra * deg_to_rad;
+  hour = hour * deg_to_rad;
+  var lat = pos[0] * deg_to_rad;
 
   // Finds sine of altitude hence taking asin after.
   // Cunning algorithm I found. Allegedly by Peter Duffet-Smith in
@@ -192,9 +193,6 @@ function radec_to_xy(ra, dec){
   // Interpolation tables.
   const r_sw = [0, 55, 110, 165, 220, 275, 330, 385, 435, 480, 510];
   const theta_sw = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95];
-
-  // var alt = 20;
-  // var az = 90;
 
   alt = 90 - alt; // Since alt is measured up from the horizon and we need it from center
   let ind = theta_sw.indexOf(alt); // Checks to see if the item is in the conversion already
@@ -220,8 +218,8 @@ function radec_to_xy(ra, dec){
     }
   }
 
-  let x = 512 - r * Math.sin(az * Math.PI / 180);
-  let y = 512 - r * Math.cos(az * Math.PI / 180);
+  let x = 512 - r * Math.sin(az * deg_to_rad);
+  let y = 512 - r * Math.cos(az * deg_to_rad);
 
   return [x, y]
 }
