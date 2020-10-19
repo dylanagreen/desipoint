@@ -1,18 +1,24 @@
-const pos = [31.96164, -111.60022] // Lat and long of the spacewatch cam
+// Start of the J2000 Epoch is January 1, 2000 at 1200 UT.
+// So year = 2000, month = 0 (January), day = 1, hour = 12
+// minute = 0, second = 0
+// Need to use this specific constructor because Date.parse() and all other constructors
+// behave differently in different browsers (I ran into this because I used Safari)
+const epoch_start = new Date(Date.UTC(2000, 0, 1, 12, 00, 00));
+const pos = [31.96164, -111.60022]; // Lat and long of the spacewatch cam
 
 // Data for the survey area, galactic plane, and ecliptic.
-const left_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/master/src/survey_left.json"
-const right_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/master/src/survey_right.json"
-const mw_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/master/src/mw.json"
-const ecliptic_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/master/src/ecliptic.json"
+const left_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/master/src/survey_left.json";
+const right_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/master/src/survey_right.json";
+const mw_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/master/src/mw.json";
+const ecliptic_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/master/src/ecliptic.json";
 
 // Image location
 // var src = "http://gagarin.lpl.arizona.edu/allsky/AllSkyCurrentImage.JPG";
-var src = "http://varuna.kpno.noao.edu/allsky/AllSkyCurrentImage.JPG"
+var src = "http://varuna.kpno.noao.edu/allsky/AllSkyCurrentImage.JPG";
 
 // Location for the telemetry
-var telemetry_link = "https://replicator.desi.lbl.gov/TV3/app/Q/query"
-var tracking = true // Whether or not to track the telescope's movements.
+var telemetry_link = "https://replicator.desi.lbl.gov/TV3/app/Q/query";
+var tracking = true; // Whether or not to track the telescope's movements.
 
 // Variables to hold the opacity of each element.
 var survey_opacity = 1;
@@ -57,8 +63,9 @@ im_layer.append("svg:image").attr("width", 1024).attr("height", 1024)
 // Roughly but not exactly the RA/Dec of Polaris as defaults
 const urlParams = new URLSearchParams(window.location.search);
 var it = urlParams.keys();
-var ra = 2.5 * 15
-var dec = 89
+var ra = 2.5 * 15;
+var ha = get_lst() - ra;
+var dec = 89;
 
 // Parses URL query params
 var result = it.next();
@@ -136,12 +143,6 @@ for (const [key, val] of urlParams) {
   }
   result = it.next();
 }
-// Start of the J2000 Epoch is January 1, 2000 at 1200 UT.
-// So year = 2000, month = 0 (January), day = 1, hour = 12
-// minute = 0, second = 0
-// Need to use this specific constructor because Date.parse() and all other constructors
-// behave differently in different browsers (I ran into this because I used Safari)
-const epoch_start = new Date(Date.UTC(2000, 0, 1, 12, 00, 00));
 
 // Calculate the LST in degrees not hours!
 function get_lst(){
@@ -240,7 +241,7 @@ var circ = overlay.append("circle").attr("r", 10).attr("cx", x).attr("cy", y)
 
 // Handles the universal time clock on the right side.
 var t_size = 200;
-var start_pos = 140; // Upper edge of the text/
+var start_pos = 140; // Upper edge of the text
 var text = svg.append("text").attr("x", 1024).attr("y", start_pos).attr("font-size", t_size + "px");
 var ut_text = svg.append("text").attr("x", 1029).attr("y", start_pos + 80).attr("font-size", t_size / 2 + "px");
 var lst_text = svg.append("text").attr("x", 1040).attr("y", start_pos + 135).attr("font-size", t_size / 3 + "px");
@@ -255,7 +256,7 @@ function update_clock() {
   var hour = (today.getUTCHours() < 10 ? "0" : "") + today.getUTCHours();
   var minute = (today.getUTCMinutes() < 10 ? "0" : "") + today.getUTCMinutes();
   var second = (today.getUTCSeconds() < 10 ? "0" : "") + today.getUTCSeconds();
-  var t = hour + ":" + minute + ":" + second + "ut";
+  var t = `${hour}:${minute}:${second}ut`;
 
   ut_text.text(t);
 
@@ -263,11 +264,12 @@ function update_clock() {
   // This line ensures that we work on 24 hour time and not negative time.
   adjusted_hour = adjusted_hour < 0 ? adjusted_hour + 24 : adjusted_hour
   hour = (adjusted_hour < 10 ? "0" : "") + adjusted_hour;
-  t = hour + ":" + minute + ":" + second;
+  t = `${hour}:${minute}:${second}`;
 
   text.text(t);
 
   var lst = get_lst() / 15; // In hours
+  var lst_degrees = Math.round(get_lst() * 1000) / 1000;
   hour = Math.floor(lst);
   // Subtract integer hours to get fractional hours then convert to minutes
   minute = (lst - hour) * 60;
@@ -279,7 +281,7 @@ function update_clock() {
   hour = (hour < 10 ? "0" : "") + hour;
   minute = (minute < 10 ? "0" : "") + minute;
   second = (second < 10 ? "0" : "") + second;
-  t = "LST: " + hour + ":" + minute + ":" + second;
+  t = `LST: ${hour}:${minute}:${second}    (${lst_degrees}\u00B0)`;
   lst_text.text(t);
 }
 
@@ -288,40 +290,72 @@ var timer = d3.interval(update_clock, 100);
 
 // Rounds to the nearest 1000th in one step.
 let ra_rounded = Math.round(ra * 1000) / 1000;
+let ha_rounded = Math.round(ha * 1000) / 1000;
 let dec_rounded = Math.round(dec * 1000) / 1000;
 
-function update_coords() {
-  var ra_str = document.getElementById("ra").value
-  var new_ra = Number(ra_str)
-  // Sets the ra to the new one as long as its not nan and is allowed.
+function update_ha() {
+  var ha_str = document.getElementById("ha").value;
+  var new_ha = Number(ha_str);
+  if (!Number.isNaN(new_ha)) {
+    ha = Number(new_ha);
+
+    // We need to update ra here too.
+    ra = get_lst() - ha;
+    document.getElementById("ra").value = ra;
+  }
+  else {
+    document.getElementById("ha").value = ha;
+  }
+
+  // Ending stuff (turning off tracking, updating telescope dot)
+  tracking = false;
+  update_tracking();
+  update_pointing();
+}
+
+function update_ra() {
+  var ra_str = document.getElementById("ra").value;
+  var new_ra = Number(ra_str);
   if (!Number.isNaN(new_ra)) {
-    ra = Number(new_ra)
+    ra = Number(new_ra);
+
+    // We need to update ha here too.
+    ha = get_lst() - ra;
+    document.getElementById("ha").value = ha;
   }
   else {
-    document.getElementById("ra").value = ra
+    document.getElementById("ra").value = ra;
   }
 
-  var dec_str = document.getElementById("dec").value
-  var new_dec = Number(dec_str)
+  // Ending stuff (turning off tracking, updating telescope dot)
+  tracking = false;
+  update_tracking();
+  update_pointing();
+
+}
+
+function update_dec() {
+  var dec_str = document.getElementById("dec").value;
+  var new_dec = Number(dec_str);
   if (!Number.isNaN(new_dec)) {
-    dec = Number(new_dec)
+    dec = Number(new_dec);
   }
   else {
-    document.getElementById("dec").value = dec
+    document.getElementById("dec").value = dec;
   }
 
-  // If this function ever gets called its because someone probably modified
-  // (or clicked inside of) the text boxes. So turn off tracking.
-  tracking = false
-  update_tracking()
-
-  update_pointing() // Updates the telescope dot itself.
+  // Ending stuff (turning off tracking, updating telescope dot)
+  tracking = false;
+  update_tracking();
+  update_pointing();
 }
 
 // Don't think I need to ever access these again so I shouldn't need to put them
 // into a variable.
 svg.append("text").attr("x", 1029).attr("y", 1.5 * t_size + 135)
    .attr("font-size", "90px").text("RA:");
+svg.append("text").attr("x", 1029).attr("y", 1.5 * t_size + 225)
+   .attr("font-size", "90px").text("HA:");
 svg.append("text").attr("x", 1490).attr("y", 1.5 * t_size + 135)
    .attr("font-size", "90px").text("DEC:");
 svg.append("text").attr("x", 1029).attr("y", 1.5 * t_size + 335)
@@ -345,22 +379,32 @@ var ra_text = svg.append("foreignObject").attr("width", 351).attr("height", 110)
                  .html("<input type=text id=ra style=\"width:275px; font-size: 65px;\">")
                  .on("keypress", function() {
                    if(d3.event.keyCode === 13){
-                     update_coords()
+                     update_ra()
                    }
                 });
+
+var ha_text = svg.append("foreignObject").attr("width", 351).attr("height", 110)
+                .attr("x", 1180).attr("y", 450)
+                .html("<input type=text id=ha style=\"width:275px; font-size: 65px;\">")
+                .on("keypress", function() {
+                  if(d3.event.keyCode === 13){
+                    update_ha()
+                  }
+               });
 
 var dec_text = svg.append("foreignObject").attr("width", 351).attr("height", 110)
                   .attr("x", 1695).attr("y", 360)
                   .html("<input type=text id=dec style=\"width:275px; font-size: 65px;\">")
                   .on("keypress", function() {
                     if(d3.event.keyCode === 13){
-                      update_coords()
+                      update_dec()
                     }
                   });
 
 // Listener for the focus out update.
-document.getElementById("ra").addEventListener("focusout", update_coords)
-document.getElementById("dec").addEventListener("focusout", update_coords)
+document.getElementById("ra").addEventListener("focusout", update_ra);
+document.getElementById("ha").addEventListener("focusout", update_ha);
+document.getElementById("dec").addEventListener("focusout", update_dec);
 
 function update_survey() {
   // Plotting the survey area in red.
@@ -458,6 +502,7 @@ function update_ecliptic() {
 function parseResponse(d) {
   ra = Number(d["results"][0]["target_ra"]);
   dec = Number(d["results"][0]["target_dec"]);
+  ha = get_lst() - ra;
 }
 
 function move(){
@@ -466,6 +511,7 @@ function move(){
   circ.attr("cx", new_coords[0]).attr("cy", new_coords[1]);
   // Resetting the text fields to whatever the new RA/DEC is in case they change.
   document.getElementById("ra").value = Math.round(ra * 1000) / 1000;
+  document.getElementById("ha").value = Math.round(ha * 1000) / 1000;
   document.getElementById("dec").value = Math.round(dec * 1000) / 1000;
 }
 
