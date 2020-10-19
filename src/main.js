@@ -224,9 +224,9 @@ function radec_to_xy(ra, dec){
   return [x, y]
 }
 
-let new_coords = radec_to_xy(ra, dec)
-let x = new_coords[0]
-let y = new_coords[1]
+let new_coords = radec_to_xy(ra, dec);
+let x = new_coords[0];
+let y = new_coords[1];
 
 // Circle at the given position.
 // I didn't know that chartreuse was a green color.
@@ -235,9 +235,10 @@ var circ = overlay.append("circle").attr("r", 10).attr("cx", x).attr("cy", y)
               .style("opacity", 1).style("fill-opacity", 0);
 
 // Handles the universal time clock on the right side.
-var t_size = 200
-var text = svg.append("text").attr("x", 1029).attr("y", t_size).attr("font-size", t_size + "px")
-var ut_text = svg.append("text").attr("x", 1029).attr("y", 1.5 * t_size).attr("font-size", t_size / 2 + "px")
+var t_size = 200;
+var start_pos = 140; // Upper edge of the text/
+var text = svg.append("text").attr("x", 1024).attr("y", start_pos).attr("font-size", t_size + "px");
+var ut_text = svg.append("text").attr("x", 1029).attr("y", start_pos + 80).attr("font-size", t_size / 2 + "px");
 
 function update_clock() {
   today = update ? new Date() : today;
@@ -318,7 +319,7 @@ var tracking_text = svg.append("text").attr("x", 1400)
 
 var ra_text = svg.append("foreignObject").attr("width", 400).attr("height", 110)
                  .attr("x", 1029 + 250).attr("y", 1.5 * t_size + 40)
-                 .html("<input type=text id=ra size=5/>")
+                 .html("<input type=text id=ra style=\"width:350px;\">")
                  .on("keypress", function() {
                    if(d3.event.keyCode === 13){
                      update_coords()
@@ -327,7 +328,7 @@ var ra_text = svg.append("foreignObject").attr("width", 400).attr("height", 110)
 
 var dec_text = svg.append("foreignObject").attr("width", 400).attr("height", 110)
                   .attr("x", 1029 + 250).attr("y", 1.5 * t_size + 145)
-                  .html("<input type=text id=dec size=5/>")
+                  .html("<input type=text id=dec style=\"width:350px;\">")
                   .on("keypress", function() {
                     if(d3.event.keyCode === 13){
                       update_coords()
