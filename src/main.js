@@ -321,9 +321,9 @@ function update_coords() {
 // Don't think I need to ever access these again so I shouldn't need to put them
 // into a variable.
 svg.append("text").attr("x", 1029).attr("y", 1.5 * t_size + 135)
-   .attr("font-size", t_size / 2 + "px").text("RA:");
-svg.append("text").attr("x", 1029).attr("y", 1.5 * t_size + 235)
-   .attr("font-size", t_size / 2 + "px").text("DEC:");
+   .attr("font-size", "90px").text("RA:");
+svg.append("text").attr("x", 1490).attr("y", 1.5 * t_size + 135)
+   .attr("font-size", "90px").text("DEC:");
 svg.append("text").attr("x", 1029).attr("y", 1.5 * t_size + 335)
    .attr("font-size", t_size / 3 + "px").text("TRACKING:");
 
@@ -340,18 +340,18 @@ var tracking_text = svg.append("text").attr("x", 1400)
                          }
                         });
 
-var ra_text = svg.append("foreignObject").attr("width", 400).attr("height", 110)
-                 .attr("x", 1029 + 250).attr("y", 1.5 * t_size + 40)
-                 .html("<input type=text id=ra style=\"width:350px;\">")
+var ra_text = svg.append("foreignObject").attr("width", 351).attr("height", 110)
+                 .attr("x", 1180).attr("y", 360)
+                 .html("<input type=text id=ra style=\"width:275px; font-size: 65px;\">")
                  .on("keypress", function() {
                    if(d3.event.keyCode === 13){
                      update_coords()
                    }
                 });
 
-var dec_text = svg.append("foreignObject").attr("width", 400).attr("height", 110)
-                  .attr("x", 1029 + 250).attr("y", 1.5 * t_size + 145)
-                  .html("<input type=text id=dec style=\"width:350px;\">")
+var dec_text = svg.append("foreignObject").attr("width", 351).attr("height", 110)
+                  .attr("x", 1695).attr("y", 360)
+                  .html("<input type=text id=dec style=\"width:275px; font-size: 65px;\">")
                   .on("keypress", function() {
                     if(d3.event.keyCode === 13){
                       update_coords()
