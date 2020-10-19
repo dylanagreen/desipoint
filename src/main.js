@@ -60,6 +60,7 @@ var it = urlParams.keys();
 var ra = 2.5 * 15
 var dec = 89
 
+// Parses URL query params
 var result = it.next();
 for (const [key, val] of urlParams) {
   if (key.toLowerCase() == "ra") {
@@ -142,12 +143,9 @@ for (const [key, val] of urlParams) {
 // behave differently in different browsers (I ran into this because I used Safari)
 const epoch_start = new Date(Date.UTC(2000, 0, 1, 12, 00, 00));
 
-// Function that converts from ra dec to xy
-function radec_to_xy(ra, dec){
-  // Finds the number of hours into the universal time day we are
-  today = update ? new Date() : today;
+// Calculate the LST in degrees not hours!
+function get_lst(){
   let seconds = (today.getTime() - epoch_start) / 1000; // Number of seconds elapsed since J2000
-  const deg_to_rad = Math.PI / 180;
 
   // Double checked this days count against somewhere else, seems accurate to
   // within 1/1000 of a day
@@ -159,12 +157,18 @@ function radec_to_xy(ra, dec){
   ut = (ut < 24) ? ut : ut - 24;
 
   // Calculates Local Sidereal Time
+  // I double checked this as well and it is within a minute of "real" LST
   var lst = 100.46 + 0.985647 * days + pos[1] + 15 * ut;
+  return lst % 360 // We need the angle in the 0-360 range.
+}
 
-  // We need the angle in the 0-360 range.
-  lst = lst % 360;
-  // I double checked this as well and it is within a minute of real LST
+// Function that converts from ra dec to xy
+function radec_to_xy(ra, dec){
+  // Finds the number of hours into the universal time day we are
+  today = update ? new Date() : today;
+  const deg_to_rad = Math.PI / 180;
 
+  var lst = get_lst();
   var hour = lst - ra; // Hour angle
 
   // Conversions to radians
@@ -239,6 +243,10 @@ var t_size = 200;
 var start_pos = 140; // Upper edge of the text/
 var text = svg.append("text").attr("x", 1024).attr("y", start_pos).attr("font-size", t_size + "px");
 var ut_text = svg.append("text").attr("x", 1029).attr("y", start_pos + 80).attr("font-size", t_size / 2 + "px");
+var lst_text = svg.append("text").attr("x", 1040).attr("y", start_pos + 135).attr("font-size", t_size / 3 + "px");
+overlay.append("line").style("stroke", "black").attr("x1", 1040).attr("y1", start_pos + 150)
+                                             .attr("x2", 2000).attr("y2", start_pos + 150)
+                                             .style("stroke-width", "5");
 
 function update_clock() {
   today = update ? new Date() : today;
@@ -258,6 +266,21 @@ function update_clock() {
   t = hour + ":" + minute + ":" + second;
 
   text.text(t);
+
+  var lst = get_lst() / 15; // In hours
+  hour = Math.floor(lst);
+  // Subtract integer hours to get fractional hours then convert to minutes
+  minute = (lst - hour) * 60;
+  // Subtract integer minutes to get fractional minutes then convert to seconds
+  second = Math.round((minute - Math.floor(minute)) * 60);
+  minute = Math.floor(minute);
+
+  // Puts zeros in front when necessary
+  hour = (hour < 10 ? "0" : "") + hour;
+  minute = (minute < 10 ? "0" : "") + minute;
+  second = (second < 10 ? "0" : "") + second;
+  t = "LST: " + hour + ":" + minute + ":" + second;
+  lst_text.text(t);
 }
 
 // Timer that updates clock every 100ms. Less memory usage than 0ms lol.
