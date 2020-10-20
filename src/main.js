@@ -281,7 +281,7 @@ function update_clock() {
   hour = (hour < 10 ? "0" : "") + hour;
   minute = (minute < 10 ? "0" : "") + minute;
   second = (second < 10 ? "0" : "") + second;
-  t = `LST: ${hour}:${minute}:${second}    (${lst_degrees}\u00B0)`;
+  t = `LMST: ${hour}:${minute}:${second}    (${lst_degrees}\u00B0)`;
   lst_text.text(t);
 }
 
