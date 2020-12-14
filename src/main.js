@@ -38,9 +38,15 @@ var svg = d3.select("body").append("div").classed("svg-container", true).append(
 var im_layer = svg.append("g")
 var overlay = svg.append("g")
 
-var error_text = svg.append("text").attr("x", 1026).attr("y", 1022)
+var error_text = svg.append("text").attr("x", 1026).attr("y", 1015)
                     .style("fill", "red").attr("font-size", 35)
-                    .attr("id", "error");
+                    .attr("id", "error")
+
+// Click the text to clear the text!
+error_text.on("click", function(d) {
+                      // Wipes the text field, that's it that's all it does.
+                      error_text.text("")
+                     });
 
 // Base objects for the overlay. These are first so tha the telescope pointing
 // circle is the highest object in z-order.
@@ -310,6 +316,7 @@ function update_ha() {
   }
   else {
     document.getElementById("ha").value = ha;
+    error_text.text("Error: Invalid hour angle.");
   }
 
   // Ending stuff (turning off tracking, updating telescope dot)
@@ -330,6 +337,7 @@ function update_ra() {
   }
   else {
     document.getElementById("ra").value = ra;
+    error_text.text("Error: Invalid right ascension.");
   }
 
   // Ending stuff (turning off tracking, updating telescope dot)
@@ -347,6 +355,7 @@ function update_dec() {
   }
   else {
     document.getElementById("dec").value = dec;
+    error_text.text("Error: Invalid declination angle.");
   }
 
   // Ending stuff (turning off tracking, updating telescope dot)
@@ -568,6 +577,7 @@ function update_image() {
   // The new fetched image.
   let imsrc = src + "?" + Date.now();
   im_layer.select("image").attr("xlink:href", imsrc).attr("id", "image");
+
 }
 
 draw_canvas() // Call the draw function first to draw everything.
