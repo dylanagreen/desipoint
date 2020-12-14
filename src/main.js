@@ -91,6 +91,17 @@ for (const [key, val] of urlParams) {
     }
   }
 
+  if (key.toLowerCase() == "ha") {
+    var url_ha = val;
+    if (!Number.isNaN(url_ha)){
+      tracking = false
+      ha = Number(url_ha)
+
+      // We need to update ha here too.
+      ra = get_lst() - ha;
+    }
+  }
+
   if (key.toLowerCase() == "dec") {
     var url_dec = val;
     if (!Number.isNaN(url_dec)){
