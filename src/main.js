@@ -38,6 +38,10 @@ var svg = d3.select("body").append("div").classed("svg-container", true).append(
 var im_layer = svg.append("g")
 var overlay = svg.append("g")
 
+var error_text = svg.append("text").attr("x", 1026).attr("y", 1022)
+                    .style("fill", "red").attr("font-size", 35)
+                    .attr("id", "error");
+
 // Base objects for the overlay. These are first so tha the telescope pointing
 // circle is the highest object in z-order.
 
@@ -92,6 +96,7 @@ for (const [key, val] of urlParams) {
     // Check to see if the date is valid.
     if (isNaN(test_date.getTime()) || test_date > Date.now()){
       console.log("Invalid date entered");
+      error_text.text("Error: Invalid date. Dates must be ISO-8601.")
     }
     else {
       // Source where the old images are stored.
