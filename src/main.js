@@ -85,6 +85,9 @@ for (const [key, val] of urlParams) {
     if (!Number.isNaN(url_ra)){
       tracking = false
       ra = Number(url_ra)
+
+      // We need to update ha here too.
+      ha = get_lst() - ra;
     }
   }
 
