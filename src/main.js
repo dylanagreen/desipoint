@@ -120,7 +120,7 @@ for (const [key, val] of urlParams) {
     }
     else {
       // Source where the old images are stored.
-      var temp_src = "http://varuna.kpno.noao.edu/allsky-all/images/cropped/";
+      var temp_src = "http://varuna.kpno.noirlab.edu/allsky-all/images/cropped/";
       temp_src = temp_src + test_date.getUTCFullYear().toString() + "/";
 
       // Get the month and date for the url
