@@ -74,7 +74,7 @@ class AllSkyImage():
 
 def create_video(start, end, toggle_mw=False, toggle_ep=False, toggle_survey=False,
                  toggle_pointing=False):
-    base_url = "http://varuna.kpno.noao.edu/allsky-all/images/cropped/"
+    base_url = "http://varuna.kpno.noirlab.edu/allsky-all/images/cropped/"
 
     # Start and end times for image range.
     start_time = Time(start).iso

@@ -14,7 +14,7 @@ const ecliptic_data = "https://raw.githubusercontent.com/dylanagreen/desipoint/m
 
 // Image location
 // var src = "http://gagarin.lpl.arizona.edu/allsky/AllSkyCurrentImage.JPG";
-var src = "http://varuna.kpno.noao.edu/allsky/AllSkyCurrentImage.JPG";
+var src = "http://varuna.kpno.noirlab.edu/allsky/AllSkyCurrentImage.JPG";
 
 // Location for the telemetry
 var telemetry_link = "https://replicator.desi.lbl.gov/TV3/app/Q/query";
