@@ -342,8 +342,8 @@ def create_video(start, end, toggle_mw=False, toggle_ep=False, toggle_survey=Fal
           cur_time = cur_time + TimeDelta(60, format="sec")
 
         # Updates the clock at the lower left corner.
-        temp_text = str(cur_time - TimeDelta(6 * 3600, format="sec")).split(" ")[1]
-        text_time.set_text(temp_text[0:5])
+        temp_text = str(cur_time - TimeDelta(7 * 3600, format="sec")).split(" ")[1]
+        text_time.set_text(temp_text[0:5] + " Local")
 
         if toggle_pointing:
             # Updates the telescope from the retrieved telemetry.
@@ -499,8 +499,8 @@ def create_image(time, toggle_mw=False, toggle_ep=False, toggle_survey=False,
         telescope.set_center(altaz_to_xy(float(pointing[1]), float(pointing[2])))
     coverup = ax.add_patch(Rectangle((0, 1024 - 50), 300, 50, fc = "black"))
 
-    temp_text = str(im_time).split(" ")[1]
-    text_time = ax.text(0, 1024 - 30, temp_text[0:5], fontsize=22, color="white")
+    temp_text = str(im_time - TimeDelta(7 * 3600, format="sec")).split(" ")[1]
+    text_time = ax.text(0, 1024 - 30, temp_text[0:5] + " Local", fontsize=22, color="white")
 
     date = str(im_time).split(" ")[0].replace("-", "")
     plt.savefig(f"{date}.png", dpi=dpi)
