@@ -16,6 +16,8 @@ import json
 import os
 from io import BytesIO
 
+base_url = "http://varuna.kpno.noirlab.edu/allsky-all/images/cropped/"
+
 # In order to remove dependencies on kpno-allsky I've ported these functions
 # over from the coordinates file.
 r_sw = [0, 55, 110, 165, 220, 275, 330, 385, 435, 480, 510]
@@ -74,8 +76,6 @@ class AllSkyImage():
 
 def create_video(start, end, toggle_mw=False, toggle_ep=False, toggle_survey=False,
                  toggle_pointing=False):
-    base_url = "http://varuna.kpno.noirlab.edu/allsky-all/images/cropped/"
-
     # Start and end times for image range.
     start_time = Time(start).iso
     end_time = Time(end).iso
@@ -94,15 +94,15 @@ def create_video(start, end, toggle_mw=False, toggle_ep=False, toggle_survey=Fal
     print(f"Video start at {str(start_time)}")
     print(f"Video end at {str(end_time)}")
 
-    try:
-        with open("auth.txt", "r") as f:
-            auth = json.load(f)
-    except Exception as e:
-        print("Loading authentication failed.")
-        print(e)
-        return
-
     if toggle_pointing:
+        try:
+            with open("auth.txt", "r") as f:
+                auth = json.load(f)
+        except Exception as e:
+            print("Loading authentication failed.")
+            print(e)
+            return
+
         print("Preparing to download images and telemetry.")
         query_url = "https://replicator.desi.lbl.gov/TV3/app/Q/query"
         params = {"namespace": "telemetry", "format": "csv",
