@@ -343,7 +343,7 @@ def create_video(start, end, toggle_mw=False, toggle_ep=False, toggle_survey=Fal
         im.set_data(images[n].data)
         return im
 
-    ani = animation.FuncAnimation(fig, update_img, len(images) * 2 - 1, interval=30)
+    ani = animation.FuncAnimation(fig, update_img, (len(images) - 1) * 2, interval=30)
     writer = animation.writers['ffmpeg'](fps=20)
 
     date = str(start_time).split(" ")[0].replace("-", "")
