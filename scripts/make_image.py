@@ -3,11 +3,8 @@ import requests
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-from astropy import units as u
-from astropy.coordinates import SkyCoord, EarthLocation
 from matplotlib.patches import Polygon, Circle, Rectangle
 from astropy.time import Time, TimeDelta
-from astropy.table import Table
 from PIL import Image, UnidentifiedImageError
 
 import argparse
@@ -16,146 +13,16 @@ import json
 import os
 from io import BytesIO
 
+from desipoint.coordinates import radec_to_xy, altaz_to_xy, trim
+from desipoint.io import load_ecliptic, load_milky_way, load_survey
+from desipoint.image import create_image
+
 base_url = "http://varuna.kpno.noirlab.edu/allsky-all/images/cropped/"
-
-# In order to remove dependencies on kpno-allsky I've ported these functions
-# over from the coordinates file.
-r_sw = [0, 55, 110, 165, 220, 275, 330, 385, 435, 480, 510]
-theta_sw = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]
-def radec_to_altaz(ra, dec, time):
-    # This is the latitude/longitude of the camera
-    camera = (31.959417 * u.deg, -111.598583 * u.deg)
-
-    cameraearth = EarthLocation(lat=camera[0], lon=camera[1],
-                                height=2120 * u.meter)
-
-    # Creates the SkyCoord object
-    radeccoord = SkyCoord(ra=ra, dec=dec, unit="deg", obstime=time,
-                          location=cameraearth, frame="icrs",
-                          temperature=5 * u.deg_C, pressure=78318 * u.Pa)
-
-    # Transforms
-    altazcoord = radeccoord.transform_to("altaz")
-
-    return (altazcoord.alt.degree, altazcoord.az.degree)
-
-def altaz_to_xy(alt, az):
-    alt = np.asarray(alt)
-    az = np.asarray(az)
-
-    # Reverse of r interpolation
-    r = np.interp(90 - alt, xp=theta_sw, fp=r_sw)
-    az = az + 0.1 # Camera rotated 0.1 degrees.
-
-    # Angle measured from vertical so sin and cos are swapped from usual polar.
-    # These are x,ys with respect to a zero.
-    x = -1 * r * np.sin(np.radians(az))
-    y = r * np.cos(np.radians(az))
-
-    # y is measured from the top!
-    center = (512, 512)
-    x = x + center[0]
-    y = center[1] - y
-
-    # Spacewatch camera isn't perfectly flat, true zenith is 2 to the right
-    # and 3 down from center.
-    x += 2
-    y += 3
-
-    return (x.tolist(), y.tolist())
-
-def radec_to_xy(ra, dec, time):
-    alt, az = radec_to_altaz(ra, dec, time)
-    x, y = altaz_to_xy(alt, az)
-    return (x, y)
 
 class AllSkyImage():
     def __init__(self, data, time):
         self.data = data
         self.time = time
-
-# Function that trims off any points that are outside the ~512 radius circle
-def trim(x_in, y_in):
-    x = 512 - np.copy(x_in)
-    y = 512 - np.copy(y_in)
-    r = np.hypot(x, y)
-
-    for i in range(len(r)):
-        if r[i] > 504:
-            x[i] = float("nan")
-            y[i] = float("nan")
-
-    return (512 - x, 512 - y)
-
-def load_ecliptic(time, radec=False):
-    ep_loc = os.path.join(os.path.dirname(__file__), "src", "ecliptic.json")
-    with open(ep_loc, "r") as f:
-        ep = json.load(f)
-
-        ep2 = []
-        for i in range(len(ep)):
-            if i % 10 >= 2 and i % 10 <= 5:
-                ep2.append(ep[i])
-
-        ep = ep2
-        ep_ra = [c[0]for c in ep]
-        ep_dec = [c[1] for c in ep]
-
-    if radec:
-        return ep_ra, ep_dec
-    else:
-        ep_x, ep_y = radec_to_xy(ep_ra, ep_dec, time)
-        ep_x, ep_y = trim(ep_x, ep_y)
-
-        return ep_x, ep_y
-
-def load_milky_way(time, radec=False):
-    mw_loc = os.path.join(os.path.dirname(__file__), "src", "mw.json")
-    with open(mw_loc, "r") as f:
-        mw = json.load(f)
-
-        # Makes the line dotted with 5 dot size gaps between the dots.
-        mw = mw[::6]
-
-        mw_ra = [c[0]for c in mw]
-        mw_dec = [c[1] for c in mw]
-
-    if radec:
-        return mw_ra, mw_dec
-    else:
-        mw_x, mw_y = radec_to_xy(mw_ra, mw_dec, time)
-        mw_x, mw_y = trim(mw_x, mw_y)
-
-        return mw_x, mw_y
-
-def load_survey(time, radec=False):
-    hull_loc = os.path.join(os.path.dirname(__file__), "src", "survey_left.json")
-    with open(hull_loc, "r") as f:
-        # Converts the string representation of the list to a list of points.
-        left = json.load(f)
-
-        left_ra = [c[0]for c in left]
-        left_dec = [c[1] for c in left]
-
-    # Load the DESI survey area
-    hull_loc = os.path.join(os.path.dirname(__file__), "src", "survey_right.json")
-    with open(hull_loc, "r") as f:
-        right = json.load(f)
-
-        right_ra = [c[0]for c in right]
-        right_dec = [c[1] for c in right]
-
-    if radec:
-        return left_ra, left_dec, right_ra, right_dec
-    else:
-        # Generating the x/y points for the desi survey areas
-        left_x, left_y = radec_to_xy(left_ra, left_dec, time)
-        left = [(left_x[i], left_y[i]) for i, _ in enumerate(left_x)]
-
-        right_x, right_y = radec_to_xy(right_ra, right_dec, time)
-        right = [(right_x[i], right_y[i]) for i, _ in enumerate(right_x)]
-
-        return left, right
 
 
 def create_video(start, end, toggle_mw=False, toggle_ep=False, toggle_survey=False,
@@ -385,125 +252,6 @@ def create_video(start, end, toggle_mw=False, toggle_ep=False, toggle_survey=Fal
 
     date = str(start_time).split(" ")[0].replace("-", "")
     ani.save(f"{date}.mp4", writer=writer, dpi=dpi)
-
-def create_image(time, toggle_mw=False, toggle_ep=False, toggle_survey=False,
-                 toggle_pointing=False):
-
-        # Start and end times for image range.
-    im_time = Time(time).iso
-
-    # Updating the start time to be the next avaliable image.
-    temp_time = str(im_time)
-    minutes = int(temp_time[-9:-7])
-    # Sets minutes to next even minute if it is odd, and remains the same if even
-    minutes = (minutes + 1) // 2 * 2
-    temp_time = temp_time[:-9] + str(minutes) + ":05.000"
-
-    im_time = Time(temp_time)
-
-    print(im_time)
-
-    # Loops over the given time period in 120s increments, getting the image at
-    # each time step.
-    print(f"Image for at {str(im_time)}")
-
-    if toggle_pointing:
-        try:
-            with open("auth.txt", "r") as f:
-                auth = json.load(f)
-        except Exception as e:
-            print("Loading authentication failed.")
-            print(e)
-            return
-
-        print("Preparing to download image and telemetry.")
-        query_url = "https://replicator.desi.lbl.gov/TV3/app/Q/query"
-        params = {"namespace": "telemetry", "format": "csv",
-                  "sql": f"select time_recorded,mount_el,mount_az from telemetry.tcs_info where time_recorded < TIMESTAMP '{str(im_time)}' order by time_recorded desc limit 1"}
-        # Ok so first get the resulting call, and decode it because its in bytes
-        # then feed it to a csv reader which we then convert to a list so
-        # now the table is a 2-d list.
-        r = requests.get(query_url, params=params, auth=(auth["usr"], auth["pass"]))
-        if r.status_code == 401:
-          print("Invalid authentication!")
-          return
-        decoded = r.content.decode("utf-8")
-        cr = csv.reader(decoded.splitlines(), delimiter=',')
-        pointing = list(cr)
-
-    else:
-        print("Preparing to download image.")
-
-    t = str(im_time)
-    d = t.split(" ")[0] # Extract the current date in case the range ticks over.
-    t = t.replace(":", "").replace("-", "").replace(" ", "_").split(".")[0]
-    file_name = t + ".jpg"
-
-    # Get the image data for this time from the server and then load
-    url = base_url + d.replace("-", "/") + "/" + file_name
-    try: # We only need to download images on even times.
-        response = requests.get(url)
-        img = np.asarray(Image.open(BytesIO(response.content)))
-
-        # Generate the Image object for appending.
-        image = AllSkyImage(img, im_time)
-
-    except UnidentifiedImageError:
-        print(f"{t} image not found!")
-        return
-        # Increment to next image 120 seconds later.
-
-    if toggle_pointing:
-        pointing = pointing[1]
-        print("Telemetry and image received and organized.")
-    else:
-        print("Image downloaded.")
-
-    # Set up the figure the same way we usually do for saving so the image is the
-    # only thing on the axis.
-    dpi = 128
-    y = image.data.shape[0] / dpi
-    x = image.data.shape[1] / dpi
-
-    # Generate Figure and Axes objects.
-    fig = plt.figure()
-    fig.set_size_inches(x, y)
-    ax = plt.Axes(fig, [0., 0., 1., 1.])  # 0 - 100% size of figure
-
-    # Turn off the actual visual axes for visual niceness.
-    # Then add axes to figure
-    ax.set_axis_off()
-    fig.add_axes(ax)
-
-    # Load the DESI survey area
-    if toggle_survey:
-        left, right = load_survey(image.time)
-
-        patch1 = ax.add_patch(Polygon(left, ec=(1, 0, 0, 1), fc=(1, 0, 0, 0.05), lw=1))
-        patch2 = ax.add_patch(Polygon(right, ec=(1, 0, 0, 1), fc=(1, 0, 0, 0.05), lw=1))
-
-    # Load the Milky Way
-    if toggle_mw:
-        mw_x, mw_y = load_milky_way(image.time)
-        mw_scatter = ax.scatter(mw_x, mw_y, c=[(1, 0, 1, 1)], s=1)
-
-    # Load the ecliptic
-    if toggle_ep:
-        ep_x, ep_y = load_ecliptic(image.time)
-        ep_scatter = ax.scatter(ep_x, ep_y, c=[(0, 1, 1, 1)], s=1)
-
-    # Adds the image into the axes and displays it
-    im = ax.imshow(image.data, cmap="gray", vmin=0, vmax=255)
-    if toggle_pointing:
-        telescope = ax.add_patch(Circle((0, 0), ec=(0, 1, 0, 1), fill=False, radius=10))
-        telescope.set_center(altaz_to_xy(float(pointing[1]), float(pointing[2])))
-    coverup = ax.add_patch(Rectangle((0, 1024 - 50), 300, 50, fc = "black"))
-
-    temp_text = str(im_time - TimeDelta(7 * 3600, format="sec")).split(" ")[1]
-    text_time = ax.text(0, 1024 - 30, temp_text[0:5] + " Local", fontsize=22, color="white")
-
-    date = str(im_time).split(" ")[0].replace("-", "")
-    plt.savefig(f"{date}.png", dpi=dpi)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

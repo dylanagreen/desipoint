@@ -12,8 +12,9 @@
 ## Requirements
 
 - astropy
-- numpy
 - matplotlib
+- numpy
+- requests
 
 ## Scripts
 
