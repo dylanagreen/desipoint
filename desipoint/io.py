@@ -5,7 +5,7 @@ import json
 import os
 
 def load_ecliptic(time, radec=False):
-    ep_loc = os.path.join(os.path.dirname(__file__), "src", "ecliptic.json")
+    ep_loc = os.path.join(os.path.dirname(__file__), "data", "ecliptic.json")
     with open(ep_loc, "r") as f:
         ep = json.load(f)
 
@@ -28,7 +28,7 @@ def load_ecliptic(time, radec=False):
         return ep_x, ep_y
 
 def load_milky_way(time, radec=False):
-    mw_loc = os.path.join(os.path.dirname(__file__), "src", "mw.json")
+    mw_loc = os.path.join(os.path.dirname(__file__), "data", "mw.json")
     with open(mw_loc, "r") as f:
         mw = json.load(f)
 
@@ -47,7 +47,7 @@ def load_milky_way(time, radec=False):
         return mw_x, mw_y
 
 def load_survey(time, radec=False):
-    hull_loc = os.path.join(os.path.dirname(__file__), "src", "survey_left.json")
+    hull_loc = os.path.join(os.path.dirname(__file__), "data", "survey_left.json")
     with open(hull_loc, "r") as f:
         # Converts the string representation of the list to a list of points.
         left = json.load(f)
@@ -56,7 +56,7 @@ def load_survey(time, radec=False):
         left_dec = [c[1] for c in left]
 
     # Load the DESI survey area
-    hull_loc = os.path.join(os.path.dirname(__file__), "src", "survey_right.json")
+    hull_loc = os.path.join(os.path.dirname(__file__), "data", "survey_right.json")
     with open(hull_loc, "r") as f:
         right = json.load(f)
 

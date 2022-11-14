@@ -23,6 +23,7 @@ setup_keywords = dict(
     packages=find_packages(),
     install_requires=['numpy', 'astropy', 'requests', 'matplotlib', 'Pillow'],
     zip_safe=False,
+    include_package_data=True,
 )
 
 setup(**setup_keywords)
