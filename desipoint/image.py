@@ -1,10 +1,7 @@
 
 from astropy.time import Time, TimeDelta
-import numpy as np
 from matplotlib.patches import Polygon, Circle, Rectangle
 import matplotlib.pyplot as plt
-from PIL import Image, UnidentifiedImageError
-import requests
 
 from io import BytesIO
 import json
