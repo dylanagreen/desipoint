@@ -19,13 +19,9 @@ def load_ecliptic(time, radec=False):
     with open(ep_loc, "r") as f:
         ep = json.load(f)
 
-        # 11/9/22: I don't remember why I do this.
-        ep2 = []
-        for i in range(len(ep)):
-            if i % 10 >= 2 and i % 10 <= 5:
-                ep2.append(ep[i])
-
-        ep = ep2
+        # Since we plot these as lines, for speed we can take only every
+        # 3rd point
+        ep = ep[::3]
         ep_ra = [c[0]for c in ep]
         ep_dec = [c[1] for c in ep]
 
@@ -42,8 +38,9 @@ def load_milky_way(time, radec=False):
     with open(mw_loc, "r") as f:
         mw = json.load(f)
 
-        # Makes the line dotted with 5 dot size gaps between the dots.
-        mw = mw[::6]
+        # Since we plot these as lines, for speed we can take only every
+        # 3rd point
+        mw = mw[::3]
 
         mw_ra = [c[0]for c in mw]
         mw_dec = [c[1] for c in mw]

@@ -77,12 +77,12 @@ def create_image(time, image=None, toggle_mw=False, toggle_ep=False, toggle_surv
     # Load the Milky Way
     if toggle_mw:
         mw_x, mw_y = load_milky_way(image.time)
-        mw_scatter = ax.scatter(mw_x, mw_y, c=[(1, 0, 1, 1)], s=1)
+        mw_scatter = ax.plot(mw_x, mw_y, c=(1, 0, 1, 1))#, s=1)
 
     # Load the ecliptic
     if toggle_ep:
         ep_x, ep_y = load_ecliptic(image.time)
-        ep_scatter = ax.scatter(ep_x, ep_y, c=[(0, 1, 1, 1)], s=1)
+        ep_scatter = ax.plot(ep_x, ep_y, c=(0, 1, 1, 1))#, s=1)
 
     # Adds the image into the axes and displays it
     im = ax.imshow(image.data, cmap="gray", vmin=0, vmax=255)
