@@ -94,6 +94,5 @@ def create_image(time, image=None, toggle_mw=False, toggle_ep=False, toggle_surv
     text_time = ax.text(0, 1024 - 30, temp_text[0:5] + " Local", fontsize=22, color="white")
 
     date = str(im_time).split(" ")[0].replace("-", "")
-    plt.savefig(f"{date}.png", dpi=dpi)
 
-    # return fig, ax
+    return fig, date, dpi

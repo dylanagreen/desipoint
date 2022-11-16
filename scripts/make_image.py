@@ -273,9 +273,9 @@ if __name__ == "__main__":
 
     if args.image:
         if args.all:
-            create_image(args.start, True, True, True, True)
+            create_image(args.start, None, True, True, True)
         else:
-            create_image(args.start, args.milkyway, args.ecliptic, args.survey, args.pointing)
+            create_image(args.start, None, args.milkyway, args.ecliptic, args.survey, args.pointing)
 
     elif args.end:
         if args.all:

@@ -130,7 +130,6 @@ def download_image(time):
     return image
 
 
-
 def load_image(fname, time):
     with Image.open(fname) as im:
         # Generate the Image object.
