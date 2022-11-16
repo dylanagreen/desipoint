@@ -45,7 +45,7 @@ def altaz_to_xy(alt, az):
     x += 2
     y += 3
 
-    return (x.tolist(), y.tolist())
+    return (x, y)
 
 def radec_to_xy(ra, dec, time):
     alt, az = radec_to_altaz(ra, dec, time)

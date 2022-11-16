@@ -9,20 +9,18 @@ import requests
 from io import BytesIO
 import json
 
-from .io import load_survey, load_milky_way, load_ecliptic
+from .io import (load_survey, load_milky_way, load_ecliptic, download_telemetry,
+                download_image)
 from .coordinates import altaz_to_xy
 
 base_url = "http://varuna.kpno.noirlab.edu/allsky-all/images/cropped/"
 
-class AllSkyImage():
-    def __init__(self, data, time):
-        self.data = data
-        self.time = time
 
-def create_image(time, toggle_mw=False, toggle_ep=False, toggle_survey=False,
+def create_image(time, image=None, toggle_mw=False, toggle_ep=False, toggle_survey=False,
                  toggle_pointing=False):
 
-        # Start and end times for image range.
+    # If image isn't passed in then we download the image
+    # Start and end times for image range.
     im_time = Time(time).iso
 
     # Updating the start time to be the next avaliable image.
@@ -30,62 +28,28 @@ def create_image(time, toggle_mw=False, toggle_ep=False, toggle_survey=False,
     minutes = int(temp_time[-9:-7])
     # Sets minutes to next even minute if it is odd, and remains the same if even
     minutes = (minutes + 1) // 2 * 2
+
+    # Sets the seconds to always be at 5 seconds. This time format (Even minutes
+    # and 5 seconds after) is the datetime each image is taken.
     temp_time = temp_time[:-9] + str(minutes) + ":05.000"
 
     im_time = Time(temp_time)
     print(f"Image for at {str(im_time)}")
 
-    if toggle_pointing:
-        try:
-            with open("auth.txt", "r") as f:
-                auth = json.load(f)
-        except Exception as e:
-            print("Loading authentication failed.")
-            print(e)
-            return
-
-        print("Preparing to download image and telemetry.")
-        query_url = "https://replicator.desi.lbl.gov/TV3/app/Q/query"
-        params = {"namespace": "telemetry", "format": "csv",
-                  "sql": f"select time_recorded,mount_el,mount_az from telemetry.tcs_info where time_recorded < TIMESTAMP '{str(im_time)}' order by time_recorded desc limit 1"}
-        # Ok so first get the resulting call, and decode it because its in bytes
-        # then feed it to a csv reader which we then convert to a list so
-        # now the table is a 2-d list.
-        r = requests.get(query_url, params=params, auth=(auth["usr"], auth["pass"]))
-        if r.status_code == 401:
-          print("Invalid authentication!")
-          return
-        decoded = r.content.decode("utf-8")
-        cr = csv.reader(decoded.splitlines(), delimiter=',')
-        pointing = list(cr)
-
-    else:
+    if image is None:
         print("Preparing to download image.")
 
-    t = str(im_time)
-    d = t.split(" ")[0] # Extract the current date in case the range ticks over.
-    t = t.replace(":", "").replace("-", "").replace(" ", "_").split(".")[0]
-    file_name = t + ".jpg"
-
-    # Get the image data for this time from the server and then load
-    url = base_url + d.replace("-", "/") + "/" + file_name
-    try:
-        response = requests.get(url)
-        img = np.asarray(Image.open(BytesIO(response.content)))
-
-        # Generate the Image object for appending.
-        image = AllSkyImage(img, im_time)
-
-    except UnidentifiedImageError:
-        print(f"{t} image not found!")
-        return
-        # Increment to next image 120 seconds later.
+        image = download_image(im_time)
 
     if toggle_pointing:
-        pointing = pointing[1]
-        print("Telemetry and image received and organized.")
-    else:
-        print("Image downloaded.")
+            print("Downloading telemetry...")
+            pointing = download_telemetry(im_time)[1]
+
+    # We failed to download the image if this triggers after the above block.
+    if image is None:
+        return
+
+    print("Image loaded.")
 
     # Set up the figure the same way we usually do for saving so the image is the
     # only thing on the axis.
@@ -133,6 +97,6 @@ def create_image(time, toggle_mw=False, toggle_ep=False, toggle_survey=False,
     text_time = ax.text(0, 1024 - 30, temp_text[0:5] + " Local", fontsize=22, color="white")
 
     date = str(im_time).split(" ")[0].replace("-", "")
-    # plt.savefig(f"{date}.png", dpi=dpi)
+    plt.savefig(f"{date}.png", dpi=dpi)
 
-    return fig, ax
+    # return fig, ax

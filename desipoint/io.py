@@ -1,8 +1,18 @@
+import numpy as np
+from PIL import Image, UnidentifiedImageError
+import requests
+
+import csv
+import json
+import os
 
 from .coordinates import radec_to_xy, trim
 
-import json
-import os
+class AllSkyImage():
+    def __init__(self, data, time):
+        self.data = data
+        self.time = time
+
 
 def load_ecliptic(time, radec=False):
     ep_loc = os.path.join(os.path.dirname(__file__), "data", "ecliptic.json")
@@ -74,3 +84,58 @@ def load_survey(time, radec=False):
         right = [(right_x[i], right_y[i]) for i, _ in enumerate(right_x)]
 
         return left, right
+
+def download_telemetry(time):
+  try:
+      with open("auth.txt", "r") as f:
+          auth = json.load(f)
+  except Exception as e:
+      print("Loading authentication failed.")
+      print(e)
+      return
+
+  print("Preparing to download image and telemetry.")
+  query_url = "https://replicator.desi.lbl.gov/TV3/app/Q/query"
+  params = {"namespace": "telemetry", "format": "csv",
+            "sql": f"select time_recorded,mount_el,mount_az from telemetry.tcs_info where time_recorded < TIMESTAMP '{str(time)}' order by time_recorded desc limit 1"}
+  # Ok so first get the resulting call, and decode it because its in bytes
+  # then feed it to a csv reader which we then convert to a list so
+  # now the table is a 2-d list.
+  r = requests.get(query_url, params=params, auth=(auth["usr"], auth["pass"]))
+  if r.status_code == 401:
+    print("Invalid authentication!")
+    return
+  decoded = r.content.decode("utf-8")
+  cr = csv.reader(decoded.splitlines(), delimiter=',')
+  return list(cr)
+
+
+def download_image(time):
+    t = str(time)
+    d = t.split(" ")[0] # Extract the current date in case the range ticks over.
+    t = t.replace(":", "").replace("-", "").replace(" ", "_").split(".")[0]
+    file_name = t + ".jpg"
+    print(file_name)
+
+    # Get the image data for this time from the server and then load
+    url = base_url + d.replace("-", "/") + "/" + file_name
+    try:
+        response = requests.get(url)
+        img = np.asarray(Image.open(BytesIO(response.content)))
+
+        # Generate the Image object for appending.
+        image = AllSkyImage(img, time)
+
+    except UnidentifiedImageError:
+        print(f"{t} image not found!")
+        return None
+
+    return image
+
+
+
+def load_image(fname, time):
+    with Image.open(fname) as im:
+        # Generate the Image object.
+        return AllSkyImage(np.asarray(im), time)
+
