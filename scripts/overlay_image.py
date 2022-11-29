@@ -29,7 +29,9 @@ if __name__ == "__main__":
         loaded_image = None
 
     if args.all:
-        create_image(args.time, loaded_image, True, True, True, True)
+        fig, date, dpi = create_image(args.time, loaded_image, True, True, True, True)
     else:
-        create_image(args.time, loaded_image, args.milkyway, args.ecliptic, args.survey, args.pointing)
+        fig, date, dpi = create_image(args.time, loaded_image, args.milkyway, args.ecliptic, args.survey, args.pointing)
+
+    fig.savefig(f"{date}.png", dpi=dpi)
 
