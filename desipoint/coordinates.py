@@ -30,7 +30,7 @@ def radec_to_altaz(ra, dec, time):
     right ascension and declination. Astropy is used to perform this conversion.
     """
     # This is the latitude/longitude of the camera
-    camera = (31.959417 * u.deg, -111.598583 * u.deg)
+    camera = (31.96164 * u.deg, -111.60022 * u.deg)
 
     cameraearth = EarthLocation(lat=camera[0], lon=camera[1],
                                 height=2120 * u.meter)
