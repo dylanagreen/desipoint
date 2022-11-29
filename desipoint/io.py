@@ -1,9 +1,11 @@
+from astropy.time import Time, TimeDelta
 import numpy as np
 from PIL import Image, UnidentifiedImageError
 import requests
 
 import csv
 import json
+from io import BytesIO
 import os
 
 from .coordinates import radec_to_xy, trim
@@ -114,10 +116,12 @@ def download_image(time):
     d = t.split(" ")[0] # Extract the current date in case the range ticks over.
     t = t.replace(":", "").replace("-", "").replace(" ", "_").split(".")[0]
     file_name = t + ".jpg"
-    print(file_name)
-
-    # Get the image data for this time from the server and then load
-    url = base_url + d.replace("-", "/") + "/" + file_name
+    if abs(time - Time.now()) < TimeDelta(60 * 2, format="sec"):
+        # Download from the current website if the image is for "now"
+        url = "http://gagarin.lpl.arizona.edu/allsky/AllSkyCurrentImage.jpg"
+    else:
+        # Get the image data for this time from the server and then load
+        url = base_url + d.replace("-", "/") + "/" + file_name
     try:
         response = requests.get(url)
         img = np.asarray(Image.open(BytesIO(response.content)))

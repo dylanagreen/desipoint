@@ -1,10 +1,8 @@
-
 from astropy.time import Time, TimeDelta
 from matplotlib.patches import Polygon, Circle, Rectangle
 import matplotlib.pyplot as plt
 
-from io import BytesIO
-import json
+from datetime import datetime
 
 from .io import (load_survey, load_milky_way, load_ecliptic, download_telemetry,
                 download_image)
@@ -15,9 +13,12 @@ def create_image(time, image=None, toggle_mw=False, toggle_ep=False, toggle_surv
 
     # If image isn't passed in then we download the image
     # Start and end times for image range.
-    im_time = Time(time).iso
+    if time == "now":
+        im_time = Time.now().iso
+    else:
+        im_time = Time(time).iso
 
-    # Updating the start time to be the next avaliable image.
+    # Updating the start time to be the next available image.
     temp_time = str(im_time)
     minutes = int(temp_time[-9:-7])
     # Sets minutes to next even minute if it is odd, and remains the same if even
@@ -26,7 +27,6 @@ def create_image(time, image=None, toggle_mw=False, toggle_ep=False, toggle_surv
     # Sets the seconds to always be at 5 seconds. This time format (Even minutes
     # and 5 seconds after) is the datetime each image is taken.
     temp_time = temp_time[:-9] + str(minutes) + ":05.000"
-
     im_time = Time(temp_time)
     print(f"Image for at {str(im_time)}")
 
