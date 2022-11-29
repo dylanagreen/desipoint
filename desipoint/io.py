@@ -14,6 +14,8 @@ class AllSkyImage():
         self.time = time
 
 
+base_url = "http://varuna.kpno.noirlab.edu/allsky-all/images/cropped/"
+
 def load_ecliptic(time, radec=False):
     ep_loc = os.path.join(os.path.dirname(__file__), "data", "ecliptic.json")
     with open(ep_loc, "r") as f:

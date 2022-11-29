@@ -10,9 +10,6 @@ from .io import (load_survey, load_milky_way, load_ecliptic, download_telemetry,
                 download_image)
 from .coordinates import altaz_to_xy
 
-base_url = "http://varuna.kpno.noirlab.edu/allsky-all/images/cropped/"
-
-
 def create_image(time, image=None, toggle_mw=False, toggle_ep=False, toggle_survey=False,
                  toggle_pointing=False):
 
